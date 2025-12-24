@@ -1,0 +1,172 @@
+{
+    "name": "predicte",
+    "displayName": "Predicte",
+    "description": "Lightweight AI-powered autocomplete using Mistral's Codestral model",
+    "version": "0.1.0",
+    "publisher": "predicte",
+    "license": "MIT",
+    "engines": {
+        "vscode": "^1.90.0"
+    },
+    "categories": [
+        "Machine Learning",
+        "Other"
+    ],
+    "keywords": [
+        "autocomplete",
+        "codestral",
+        "mistral",
+        "ai",
+        "code completion",
+        "lightweight",
+        "fim"
+    ],
+    "activationEvents": [
+        "onStartupFinished"
+    ],
+    "main": "./dist/extension.js",
+    "contributes": {
+        "configuration": {
+            "title": "Predicte",
+            "properties": {
+                "predicte.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable/disable Predicte autocomplete",
+                    "order": 1
+                },
+                "predicte.model": {
+                    "type": "string",
+                    "enum": [
+                        "codestral-latest",
+                        "codestral-22b",
+                        "codestral-2404"
+                    ],
+                    "default": "codestral-latest",
+                    "enumDescriptions": [
+                        "Latest Codestral model (best quality)",
+                        "Smaller, faster Codestral model",
+                        "April 2024 version"
+                    ],
+                    "description": "Codestral model to use",
+                    "order": 2
+                },
+                "predicte.maxTokens": {
+                    "type": "number",
+                    "default": 50,
+                    "minimum": 1,
+                    "maximum": 500,
+                    "description": "Maximum completion tokens",
+                    "order": 3
+                },
+                "predicte.temperature": {
+                    "type": "number",
+                    "default": 0.1,
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "Sampling temperature (lower = more deterministic)",
+                    "order": 4
+                },
+                "predicte.debounceDelay": {
+                    "type": "number",
+                    "default": 300,
+                    "minimum": 100,
+                    "maximum": 2000,
+                    "description": "Delay before triggering autocomplete (ms)",
+                    "order": 5
+                },
+                "predicte.contextLines": {
+                    "type": "number",
+                    "default": 20,
+                    "minimum": 5,
+                    "maximum": 100,
+                    "description": "Number of context lines to include",
+                    "order": 6
+                },
+                "predicte.enableStreaming": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Use streaming for completions",
+                    "order": 7
+                },
+                "predicte.cacheEnabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Enable completion caching",
+                    "order": 8
+                },
+                "predicte.cacheTTL": {
+                    "type": "number",
+                    "default": 60000,
+                    "minimum": 1000,
+                    "maximum": 600000,
+                    "description": "Cache TTL in milliseconds",
+                    "order": 9
+                },
+                "predicte.requestTimeout": {
+                    "type": "number",
+                    "default": 30000,
+                    "minimum": 5000,
+                    "maximum": 120000,
+                    "description": "Request timeout in milliseconds",
+                    "order": 10
+                }
+            }
+        },
+        "commands": [
+            {
+                "command": "predicte.toggle",
+                "title": "Predicte: Toggle Autocomplete"
+            },
+            {
+                "command": "predicte.setApiKey",
+                "title": "Predicte: Set API Key"
+            },
+            {
+                "command": "predicte.clearCache",
+                "title": "Predicte: Clear Cache"
+            },
+            {
+                "command": "predicte.showStatus",
+                "title": "Predicte: Show Status"
+            }
+        ],
+        "keybindings": [
+            {
+                "command": "predicte.toggle",
+                "key": "ctrl+alt+c",
+                "mac": "cmd+alt+c"
+            }
+        ]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run package",
+        "compile": "webpack",
+        "watch": "webpack --watch",
+        "package": "webpack --mode production --devtool hidden-source-map",
+        "compile-tests": "tsc -p . --outDir out",
+        "watch-tests": "tsc -p . -w --outDir out",
+        "pretest": "npm run compile-tests && npm run compile && npm run lint",
+        "lint": "eslint src --ext ts",
+        "lint:fix": "eslint src --ext ts --fix",
+        "format": "prettier --write \"src/**/*.ts\"",
+        "format:check": "prettier --check \"src/**/*.ts\""
+    },
+    "devDependencies": {
+        "@types/node": "25.0.3",
+        "@types/vscode": "^1.107.0",
+        "@typescript-eslint/eslint-plugin": "^8.50.1",
+        "@typescript-eslint/parser": "^8.50.1",
+        "eslint": "^9.39.2",
+        "eslint-config-prettier": "^10.1.8",
+        "prettier": "^3.7.4",
+        "ts-loader": "^9.5.4",
+        "typescript": "^5.9.3",
+        "webpack": "^5.104.1",
+        "webpack-cli": "^6.0.1"
+    },
+    "dependencies": {
+        "@mistralai/mistralai": "^1.11.0",
+        "zod": "^3.20.0"
+    }
+}
