@@ -11,40 +11,40 @@
  */
 
 export class Debouncer<T> {
-    private timer: NodeJS.Timeout | undefined = undefined;
-    private delay: number;
+  private timer: NodeJS.Timeout | undefined = undefined;
+  private delay: number;
 
-    constructor(delay: number) {
-        this.delay = delay;
+  constructor(delay: number) {
+    this.delay = delay;
+  }
+
+  debounce(callback: () => T | Promise<T>): Promise<T> {
+    return new Promise((resolve, reject) => {
+      if (this.timer) {
+        clearTimeout(this.timer);
+      }
+
+      this.timer = setTimeout(() => {
+        void Promise.resolve()
+          .then(() => callback())
+          .then((result) => resolve(result))
+          .catch((error) => reject(error));
+      }, this.delay);
+    });
+  }
+
+  cancel(): void {
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = undefined;
     }
+  }
 
-    debounce(callback: () => T | Promise<T>): Promise<T> {
-        return new Promise((resolve, reject) => {
-            if (this.timer) {
-                clearTimeout(this.timer);
-            }
+  setDelay(delay: number): void {
+    this.delay = delay;
+  }
 
-            this.timer = setTimeout(() => {
-                void Promise.resolve()
-                    .then(() => callback())
-                    .then((result) => resolve(result))
-                    .catch((error) => reject(error));
-            }, this.delay);
-        });
-    }
-
-    cancel(): void {
-        if (this.timer) {
-            clearTimeout(this.timer);
-            this.timer = undefined;
-        }
-    }
-
-    setDelay(delay: number): void {
-        this.delay = delay;
-    }
-
-    dispose(): void {
-        this.cancel();
-    }
+  dispose(): void {
+    this.cancel();
+  }
 }
