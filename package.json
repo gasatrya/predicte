@@ -60,10 +60,10 @@
             "https://api.mistral.ai",
             "https://codestral.mistral.ai"
           ],
-          "default": "https://api.mistral.ai",
+          "default": "https://codestral.mistral.ai",
           "enumDescriptions": [
             "Use regular Mistral API (for Mistral API keys)",
-            "Use Codestral API (for Codestral-specific API keys)"
+            "Use Codestral API (recommended, for Codestral-specific API keys)"
           ],
           "description": "API base URL - use codestral.mistral.ai for Codestral API keys, api.mistral.ai for regular Mistral API keys. Do NOT include /v1 in the URL.",
           "order": 2

@@ -26,7 +26,7 @@ import * as vscode from 'vscode';
 export type CodestralModel =
   | 'codestral-latest'
   | 'codestral-22b'
-  | 'codestral-2404'
+  | 'codestral-2404';
 
 /**
  * Valid API base URLs
@@ -34,24 +34,24 @@ export type CodestralModel =
  */
 export type ApiBaseUrl =
   | 'https://api.mistral.ai'
-  | 'https://codestral.mistral.ai'
+  | 'https://codestral.mistral.ai';
 
 /**
  * Predicte configuration interface
  */
 export interface PredicteConfigValues {
-  enabled: boolean
-  apiBaseUrl: ApiBaseUrl
-  model: CodestralModel
-  maxTokens: number
-  temperature: number
-  debounceDelay: number
-  contextLines: number
-  enableStreaming: boolean
-  cacheEnabled: boolean
-  cacheTTL: number
-  requestTimeout: number
-  apiKey?: string
+  enabled: boolean;
+  apiBaseUrl: ApiBaseUrl;
+  model: CodestralModel;
+  maxTokens: number;
+  temperature: number;
+  debounceDelay: number;
+  contextLines: number;
+  enableStreaming: boolean;
+  cacheEnabled: boolean;
+  cacheTTL: number;
+  requestTimeout: number;
+  apiKey?: string;
 }
 
 /**
@@ -95,7 +95,10 @@ export class PredicteConfig {
    * @returns The API base URL to use
    */
   get apiBaseUrl(): ApiBaseUrl {
-    return this.config.get<ApiBaseUrl>('apiBaseUrl', 'https://api.mistral.ai');
+    return this.config.get<ApiBaseUrl>(
+      'apiBaseUrl',
+      'https://codestral.mistral.ai',
+    );
   }
 
   /**
