@@ -10,6 +10,7 @@ Predicte is a lightweight AI-powered autocomplete extension for VS Code using Mi
 
 - **builder**: For implementing features, fixing bugs, or making code changes
 - **senior-builder**: Use this specialist when `builder` is unable to resolve complex issues or when the codebase requires significant refactoring.
+- **junior-builder**: For implementing small, easy, fast, and straightforward changes
 - **reviewer**: Review code before moving to QA
 - **qa-specialist**: Audit code, verifies file structures, and runs tests
 - **debugger**: When encountering bugs, issues, runtime errors or logical bugs
