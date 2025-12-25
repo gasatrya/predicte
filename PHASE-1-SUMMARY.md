@@ -451,7 +451,7 @@ VS Code calls provideInlineCompletionItems()
 | VS Code API       | @types/vscode        | ^1.107.0 |
 | TypeScript        | typescript           | ^5.9.3   |
 | Mistral SDK       | @mistralai/mistralai | ^1.11.0  |
-| Schema Validation | zod                  | ^3.20.0  |
+| Schema Validation | zod                  | ^4.2.1  |
 | Build Tool        | webpack              | ^5.104.1 |
 | Module Loader     | ts-loader            | ^9.5.4   |
 | Linter            | eslint               | ^9.39.2  |
