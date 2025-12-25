@@ -8,12 +8,16 @@
 import * as vscode from 'vscode';
 import { PredicteConfig } from './managers/configManager';
 import { PredicteSecretStorage } from './services/secretStorage';
+import { PredicteCompletionProvider } from './providers/completionProvider';
+import { Logger } from './utils/logger';
 
 /**
  * Module-level instances
  */
 let config: PredicteConfig;
 let secretStorage: PredicteSecretStorage;
+let completionProvider: PredicteCompletionProvider;
+let logger: Logger;
 
 /**
  * This method is called when your extension is activated.
@@ -22,14 +26,24 @@ let secretStorage: PredicteSecretStorage;
  * @param {vscode.ExtensionContext} context - The extension context
  */
 export function activate(context: vscode.ExtensionContext): void {
-    console.log('Predicte extension is now active!');
+    console.warn('[Predicte][DEBUG] Extension activating...');
+    // Extension is now active
 
-    // Initialize configuration manager and secret storage
+    // Initialize configuration manager, secret storage, and logger
     config = new PredicteConfig();
     secretStorage = new PredicteSecretStorage(context);
+    logger = new Logger('Predicte');
 
-    // TODO: Initialize completion provider
-    // TODO: Initialize status bar
+    // Initialize completion provider
+    completionProvider = new PredicteCompletionProvider(config, secretStorage, logger);
+
+    // Register the inline completion provider for all languages
+    const providerDisposable = vscode.languages.registerInlineCompletionItemProvider(
+        { pattern: '**' },
+        completionProvider
+    );
+    context.subscriptions.push(providerDisposable);
+    console.warn('[Predicte][DEBUG] Inline completion provider registered for all files');
 
     // Register toggle command
     const toggleCommand = vscode.commands.registerCommand('predicte.toggle', async () => {
@@ -43,16 +57,13 @@ export function activate(context: vscode.ExtensionContext): void {
     // Register set API key command
     const setApiKeyCommand = vscode.commands.registerCommand('predicte.setApiKey', async () => {
         const apiKey = await vscode.window.showInputBox({
-            prompt: 'Enter your Mistral API key',
+            prompt: 'Enter your Codestral API key',
             password: true,
             ignoreFocusOut: true,
-            placeHolder: 'sk-...',
+            placeHolder: 'Enter your API key',
             validateInput: (value: string) => {
                 if (!value || value.trim().length === 0) {
                     return 'API key is required';
-                }
-                if (!value.startsWith('sk-')) {
-                    return 'API key should start with "sk-"';
                 }
                 return null;
             },
@@ -71,7 +82,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
     // Register clear cache command
     const clearCacheCommand = vscode.commands.registerCommand('predicte.clearCache', async () => {
-        // TODO: Clear LRU cache
+        completionProvider.clearCache();
         vscode.window.showInformationMessage('Cache cleared');
     });
 
@@ -100,21 +111,23 @@ Predicte Status:
     );
 
     // Show welcome message after a short delay
-    setTimeout(async () => {
-        const hasApiKey = await secretStorage.hasApiKey();
-        if (!hasApiKey) {
-            vscode.window
-                .showInformationMessage(
-                    'Predicte: Please set your Mistral API key to get started',
-                    'Set API Key',
-                    'Later'
-                )
-                .then((selection) => {
-                    if (selection === 'Set API Key') {
-                        vscode.commands.executeCommand('predicte.setApiKey');
-                    }
-                });
-        }
+    setTimeout(() => {
+        void (async () => {
+            const hasApiKey = await secretStorage.hasApiKey();
+            if (!hasApiKey) {
+                vscode.window
+                    .showInformationMessage(
+                        'Predicte: Please set your Codestral API key to get started',
+                        'Set API Key',
+                        'Later'
+                    )
+                    .then((selection) => {
+                        if (selection === 'Set API Key') {
+                            void vscode.commands.executeCommand('predicte.setApiKey');
+                        }
+                    });
+            }
+        })();
     }, 2000);
 }
 
@@ -122,6 +135,10 @@ Predicte Status:
  * This method is called when your extension is deactivated.
  */
 export function deactivate(): void {
-    console.log('Predicte extension deactivated');
-    // TODO: Cleanup resources, dispose timers, etc.
+    // Extension deactivated
+
+    // Dispose of completion provider
+    if (completionProvider) {
+        completionProvider.dispose();
+    }
 }

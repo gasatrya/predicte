@@ -82,11 +82,6 @@ export class PredicteSecretStorage {
             throw new Error('API key cannot be empty or whitespace only');
         }
 
-        // Validate API key format (should start with "sk-")
-        if (!trimmedKey.startsWith('sk-')) {
-            throw new Error('API key should start with "sk-"');
-        }
-
         try {
             await this.secretStorage.store(PredicteSecretStorage.API_KEY_KEY, trimmedKey);
         } catch (error) {

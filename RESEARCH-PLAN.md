@@ -1,7 +1,7 @@
 # Research Plan: Predicte VS Code Extension
 
-**Document Version:** 1.0
-**Date:** 2025-12-24
+**Document Version:** 1.1
+**Date:** 2025-12-25
 **Author:** Predicte Team
 
 ---
@@ -72,9 +72,29 @@ The Predicte extension aims to provide a lightweight, focused AI-powered code co
 
 ### 2.1 API Endpoint Documentation
 
-**Base URL:** `https://api.mistral.ai/v1`
+**Base URLs:**
 
-**FIM Completions Endpoint:** `https://api.mistral.ai/v1/fim/completions`
+| Service         | Base URL                       | FIM Endpoint          | API Key Type                                  |
+| --------------- | ------------------------------ | --------------------- | --------------------------------------------- |
+| Regular Mistral | `https://api.mistral.ai`       | `/v1/fim/completions` | Regular Mistral API keys (starts with `sk-`)  |
+| Codestral       | `https://codestral.mistral.ai` | `/v1/fim/completions` | Codestral-specific API keys (no `sk-` prefix) |
+
+**Full Endpoints:**
+
+- **Regular Mistral:** `https://api.mistral.ai/v1/fim/completions`
+- **Codestral:** `https://codestral.mistral.ai/v1/fim/completions`
+
+**IMPORTANT:** When configuring the `apiBaseUrl` in the extension, use ONLY the base URL without `/v1`. The Mistral SDK automatically appends the endpoint path.
+
+**Correct Examples:**
+
+- `https://api.mistral.ai` (for regular Mistral API keys)
+- `https://codestral.mistral.ai` (for Codestral-specific API keys)
+
+**Incorrect Examples (will cause "no Route matched" errors):**
+
+- `https://api.mistral.ai/v1`
+- `https://codestral.mistral.ai/v1`
 
 **Using Official SDK (Recommended):**
 
@@ -128,7 +148,21 @@ const getModelForContext = (contextLength: number): string => {
 1. Visit [Mistral Console](https://console.mistral.ai)
 2. Create account (free tier available)
 3. Generate API key
-4. Store securely in extension
+4. Store securely in extension using VS Code's SecretStorage API
+
+**API Key Types:**
+
+| Key Type        | Format            | Endpoint                       | Notes                           |
+| --------------- | ----------------- | ------------------------------ | ------------------------------- |
+| Regular Mistral | Starts with `sk-` | `https://api.mistral.ai`       | Standard Mistral API key format |
+| Codestral       | No `sk-` prefix   | `https://codestral.mistral.ai` | Codestral-specific key format   |
+
+**Important:** The API key must match the endpoint being used:
+
+- Regular Mistral API keys (`sk-xxx`) only work with `api.mistral.ai`
+- Codestral API keys (no `sk-` prefix) only work with `codestral.mistral.ai`
+
+Mixing these will result in 401 authentication errors.
 
 **Authentication Code:**
 
@@ -870,20 +904,22 @@ function getLanguagePrompt(languageId: string): string {
 
 **Goals:**
 
-- Basic inline completion provider
-- Mistral API integration
-- Configuration management
-- Basic error handling
+- ✅ Basic inline completion provider
+- ✅ Mistral API integration
+- ✅ Configuration management
+- ✅ Basic error handling
+
+**Status:** COMPLETED ✅
 
 **Tasks:**
 
-1. **Project Setup**
-    - Initialize VS Code extension project
-    - Install dependencies (@mistralai/mistralai, typescript)
-    - Configure TypeScript and Webpack
-    - Set up development environment
+1. **Project Setup** (✅ Completed)
+    - ✅ Initialize VS Code extension project
+    - ✅ Install dependencies (@mistralai/mistralai, typescript)
+    - ✅ Configure TypeScript and Webpack
+    - ✅ Set up development environment
 
-2. **Configuration Implementation**
+2. **Configuration Implementation** (✅ Completed)
 
     ```typescript
     // src/config.ts
@@ -1067,9 +1103,27 @@ function getLanguagePrompt(languageId: string): string {
 **Deliverables:**
 
 - ✅ Working autocomplete extension
-- ✅ Configuration settings
-- ✅ Basic error handling
+- ✅ Configuration settings (11 configurable options)
+- ✅ Basic error handling with user-friendly messages
 - ✅ Toggle command
+- ✅ Set API key command
+- ✅ Clear cache command
+- ✅ Show status command
+
+**Phase 1 Completion Notes:**
+
+**API Base URL Configuration Discovery:**
+During implementation, it was discovered that:
+
+1. Codestral has a separate endpoint (`https://codestral.mistral.ai`) from regular Mistral (`https://api.mistral.ai`)
+2. Codestral API keys have a different format (no `sk-` prefix) compared to regular Mistral API keys (`sk-xxx`)
+3. The Mistral SDK automatically appends `/v1/fim/completions` to the `serverURL`, so the configuration should NOT include `/v1`
+4. Including `/v1` in the `serverURL` causes duplicate paths like `/v1/v1/fim/completions` resulting in "no Route matched" errors
+
+**Configuration Added:**
+
+- `apiBaseUrl` setting to choose between regular Mistral and Codestral endpoints
+- Error handling now provides context-aware hints about which API key type is needed based on selected endpoint
 
 ### 5.2 Phase 2: Enhanced Context & Caching (Week 2)
 

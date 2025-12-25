@@ -7,6 +7,7 @@
  *
  * Configuration properties:
  * - enabled (boolean): Enable/disable Predicte autocomplete
+ * - apiBaseUrl (string): API base URL to use (api.mistral.ai or codestral.mistral.ai) - do NOT include /v1
  * - model (string): Codestral model to use (codestral-latest, codestral-22b, codestral-2404)
  * - maxTokens (number): Maximum completion tokens (1-500)
  * - temperature (number): Sampling temperature (0-1)
@@ -25,10 +26,17 @@ import * as vscode from 'vscode';
 export type CodestralModel = 'codestral-latest' | 'codestral-22b' | 'codestral-2404';
 
 /**
+ * Valid API base URLs
+ * NOTE: Do NOT include /v1 in the URL as the SDK appends the endpoint path automatically
+ */
+export type ApiBaseUrl = 'https://api.mistral.ai' | 'https://codestral.mistral.ai';
+
+/**
  * Predicte configuration interface
  */
 export interface PredicteConfigValues {
     enabled: boolean;
+    apiBaseUrl: ApiBaseUrl;
     model: CodestralModel;
     maxTokens: number;
     temperature: number;
@@ -61,9 +69,9 @@ export class PredicteConfig {
 
     /**
      * Get the API key from configuration
+     * @deprecated API keys should be stored in SecretStorage for security.
+     *             Use PredicteSecretStorage.getApiKey() instead.
      * @returns The API key, or undefined if not set
-     * @note API keys should be stored in SecretStorage for security.
-     *       This getter is provided for backward compatibility only.
      */
     get apiKey(): string | undefined {
         return this.config.get<string>('apiKey');
@@ -75,6 +83,14 @@ export class PredicteConfig {
      */
     get enabled(): boolean {
         return this.config.get<boolean>('enabled', true);
+    }
+
+    /**
+     * Get the API base URL
+     * @returns The API base URL to use
+     */
+    get apiBaseUrl(): ApiBaseUrl {
+        return this.config.get<ApiBaseUrl>('apiBaseUrl', 'https://api.mistral.ai');
     }
 
     /**
@@ -156,6 +172,7 @@ export class PredicteConfig {
     getAll(): PredicteConfigValues {
         return {
             enabled: this.enabled,
+            apiBaseUrl: this.apiBaseUrl,
             model: this.model,
             maxTokens: this.maxTokens,
             temperature: this.temperature,

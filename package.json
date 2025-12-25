@@ -22,7 +22,26 @@
         "fim"
     ],
     "activationEvents": [
-        "onStartupFinished"
+        "onStartupFinished",
+        "onLanguage:javascript",
+        "onLanguage:typescript",
+        "onLanguage:python",
+        "onLanguage:java",
+        "onLanguage:cpp",
+        "onLanguage:csharp",
+        "onLanguage:go",
+        "onLanguage:rust",
+        "onLanguage:php",
+        "onLanguage:ruby",
+        "onLanguage:swift",
+        "onLanguage:kotlin",
+        "onLanguage:scala",
+        "onLanguage:html",
+        "onLanguage:css",
+        "onLanguage:json",
+        "onLanguage:markdown",
+        "onLanguage:yaml",
+        "onLanguage:xml"
     ],
     "main": "./dist/extension.js",
     "contributes": {
@@ -34,6 +53,20 @@
                     "default": true,
                     "description": "Enable/disable Predicte autocomplete",
                     "order": 1
+                },
+                "predicte.apiBaseUrl": {
+                    "type": "string",
+                    "enum": [
+                        "https://api.mistral.ai",
+                        "https://codestral.mistral.ai"
+                    ],
+                    "default": "https://api.mistral.ai",
+                    "enumDescriptions": [
+                        "Use regular Mistral API (for Mistral API keys)",
+                        "Use Codestral API (for Codestral-specific API keys)"
+                    ],
+                    "description": "API base URL - use codestral.mistral.ai for Codestral API keys, api.mistral.ai for regular Mistral API keys. Do NOT include /v1 in the URL.",
+                    "order": 2
                 },
                 "predicte.model": {
                     "type": "string",
@@ -49,7 +82,7 @@
                         "April 2024 version"
                     ],
                     "description": "Codestral model to use",
-                    "order": 2
+                    "order": 3
                 },
                 "predicte.maxTokens": {
                     "type": "number",
@@ -57,7 +90,7 @@
                     "minimum": 1,
                     "maximum": 500,
                     "description": "Maximum completion tokens",
-                    "order": 3
+                    "order": 4
                 },
                 "predicte.temperature": {
                     "type": "number",
@@ -65,7 +98,7 @@
                     "minimum": 0,
                     "maximum": 1,
                     "description": "Sampling temperature (lower = more deterministic)",
-                    "order": 4
+                    "order": 5
                 },
                 "predicte.debounceDelay": {
                     "type": "number",
@@ -73,7 +106,7 @@
                     "minimum": 100,
                     "maximum": 2000,
                     "description": "Delay before triggering autocomplete (ms)",
-                    "order": 5
+                    "order": 6
                 },
                 "predicte.contextLines": {
                     "type": "number",
@@ -81,19 +114,19 @@
                     "minimum": 5,
                     "maximum": 100,
                     "description": "Number of context lines to include",
-                    "order": 6
+                    "order": 7
                 },
                 "predicte.enableStreaming": {
                     "type": "boolean",
                     "default": true,
                     "description": "Use streaming for completions",
-                    "order": 7
+                    "order": 8
                 },
                 "predicte.cacheEnabled": {
                     "type": "boolean",
                     "default": true,
                     "description": "Enable completion caching",
-                    "order": 8
+                    "order": 9
                 },
                 "predicte.cacheTTL": {
                     "type": "number",
@@ -101,7 +134,7 @@
                     "minimum": 1000,
                     "maximum": 600000,
                     "description": "Cache TTL in milliseconds",
-                    "order": 9
+                    "order": 10
                 },
                 "predicte.requestTimeout": {
                     "type": "number",
@@ -109,7 +142,7 @@
                     "minimum": 5000,
                     "maximum": 120000,
                     "description": "Request timeout in milliseconds",
-                    "order": 10
+                    "order": 11
                 }
             }
         },

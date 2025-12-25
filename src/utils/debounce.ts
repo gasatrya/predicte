@@ -4,10 +4,10 @@
  * This module provides a debounce utility for delaying function calls
  * until a specified time has passed without any new calls.
  *
- * TODO: Implement debounce utility
- * - Create Debouncer class
- * - Support cancellation
- * - Support custom delay
+ * Features:
+ * - Debounces function calls with configurable delay
+ * - Supports cancellation of pending debounced calls
+ * - Supports custom delay configuration
  */
 
 export class Debouncer<T> {
@@ -19,15 +19,16 @@ export class Debouncer<T> {
     }
 
     debounce(callback: () => T | Promise<T>): Promise<T> {
-        // TODO: Implement debounce logic
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
             if (this.timer) {
                 clearTimeout(this.timer);
             }
 
-            this.timer = setTimeout(async () => {
-                const result = await callback();
-                resolve(result);
+            this.timer = setTimeout(() => {
+                void Promise.resolve()
+                    .then(() => callback())
+                    .then((result) => resolve(result))
+                    .catch((error) => reject(error));
             }, this.delay);
         });
     }

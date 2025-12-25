@@ -10,9 +10,30 @@
  * - Automatic retry with exponential backoff
  * - Comprehensive error handling
  * - Client reset when API key changes
+ * - Support for both Mistral and Codestral API endpoints
  *
  * API Endpoints:
+ * - Regular Mistral: https://api.mistral.ai (for Mistral API keys)
+ * - Codestral: https://codestral.mistral.ai (for Codestral-specific API keys)
  * - FIM Complete: /v1/fim/completions
+ *
+ * IMPORTANT: serverURL Configuration
+ * ====================================
+ * The SDK appends the API version path (/v1/fim/completions) to the serverURL.
+ * Therefore, serverURL should NOT include /v1 in the path.
+ *
+ * CORRECT serverURL examples:
+ * - https://api.mistral.ai (Mistral regular endpoint)
+ * - https://codestral.mistral.ai (Codestral-specific endpoint)
+ *
+ * INCORRECT serverURL examples (will cause URL construction issues):
+ * - https://api.mistral.ai/v1
+ * - https://codestral.mistral.ai/v1
+ * - https://api.mistral.ai/v1/
+ *
+ * Using incorrect serverURL will result in URLs like:
+ * https://codestral.mistral.ai/v1/v1/fim/completions
+ * which causes "no Route matched with those values" errors.
  *
  * Supported Models:
  * - codestral-latest (recommended)
@@ -39,6 +60,7 @@ import {
 import type { PredicteConfig } from '../managers/configManager';
 import type { PredicteSecretStorage } from './secretStorage';
 import { CacheManager } from '../managers/cacheManager';
+import { logger } from '../utils/logger';
 import * as crypto from 'node:crypto';
 
 /**
@@ -75,12 +97,56 @@ export class MistralClient {
     /**
      * Create a new Mistral SDK client instance
      *
-     * @param apiKey The Mistral API key
+     * @param apiKey The API key (Mistral or Codestral)
      * @returns Configured Mistral client
      */
     private createMistralClient(apiKey: string): Mistral {
+        const serverURL = this.config.apiBaseUrl;
+        console.warn(`[DEBUG] Creating Mistral client with serverURL: ${serverURL}`);
+        console.warn(`[DEBUG] serverURL ends with /v1: ${serverURL.endsWith('/v1')}`);
+        console.warn(`[DEBUG] serverURL ends with /: ${serverURL.endsWith('/')}`);
+
+        // Warn about potential URL construction issues
+        if (serverURL.endsWith('/v1') || serverURL.endsWith('/v1/')) {
+            console.warn(
+                '[WARNING] serverURL ends with /v1. The SDK may append the path again, causing /v1/v1/... in the final URL.'
+            );
+            console.warn(
+                '[WARNING] Try removing /v1 from the serverURL setting and use just the base domain.'
+            );
+        }
+
+        // Validate and provide hints about endpoint selection
+        if (serverURL.includes('codestral')) {
+            console.warn(
+                '[INFO] Using Codestral endpoint. Make sure you have a Codestral API key.'
+            );
+            console.warn(
+                '[INFO] Expected FIM endpoint for Codestral: https://codestral.mistral.ai/v1/fim/completions'
+            );
+        } else {
+            console.warn(
+                '[INFO] Using regular Mistral endpoint. Make sure you have a regular Mistral API key.'
+            );
+            console.warn(
+                '[INFO] Expected FIM endpoint for Mistral: https://api.mistral.ai/v1/fim/completions'
+            );
+        }
+
+        // Construct expected full URL for debugging
+        let expectedURL: string;
+        if (serverURL.endsWith('/v1') || serverURL.endsWith('/v1/')) {
+            expectedURL = serverURL.replace(/\/v1\/?$/, '') + '/v1/fim/completions';
+        } else if (serverURL.endsWith('/')) {
+            expectedURL = serverURL + 'v1/fim/completions';
+        } else {
+            expectedURL = serverURL + '/v1/fim/completions';
+        }
+        console.warn(`[DEBUG] Expected FIM complete URL: ${expectedURL}`);
+
         return new Mistral({
             apiKey,
+            serverURL,
             timeoutMs: this.config.requestTimeout,
             retryConfig: {
                 strategy: this.config.enableStreaming ? 'none' : 'backoff',
@@ -101,20 +167,29 @@ export class MistralClient {
      * @throws MistralClientError if API key is not available
      */
     private async getClient(): Promise<Mistral> {
+        console.warn('[DEBUG] getClient called');
         if (this.client) {
+            console.warn('[DEBUG] Returning existing client');
             return this.client;
         }
 
+        console.warn('[DEBUG] Retrieving API key from secret storage...');
         const apiKey = await this.secretStorage.getApiKey();
 
+        console.warn('[DEBUG] API key available:', apiKey ? 'YES' : 'NO');
+        console.warn('[DEBUG] API base URL:', this.config.apiBaseUrl);
+
         if (!apiKey) {
+            console.warn('[DEBUG] API key not found, throwing MISSING_API_KEY error');
             throw new MistralClientError(
-                'API key not found. Please set your Mistral API key.',
+                'API key not found. Please set your Mistral API key in settings.',
                 'MISSING_API_KEY'
             );
         }
 
+        console.warn('[DEBUG] Creating new Mistral client...');
         this.client = this.createMistralClient(apiKey);
+        console.warn('[DEBUG] Mistral client created successfully');
         return this.client;
     }
 
@@ -198,26 +273,37 @@ export class MistralClient {
         suffix?: string,
         token?: vscode.CancellationToken
     ): Promise<string | null> {
+        console.warn('[DEBUG] MistralClient.getCompletion called');
         // Check for cancellation
         if (token?.isCancellationRequested) {
+            console.warn('[DEBUG] Request cancelled in getCompletion');
             throw new MistralClientError('Request cancelled', 'CANCELLED');
         }
 
         // Check cache first if enabled
         if (this.config.cacheEnabled) {
+            console.warn('[DEBUG] Cache enabled, checking for cached result...');
             const cacheKey = this.generateCacheKey(prefix, suffix);
             const cached = this.cache.get(cacheKey);
             if (cached !== undefined) {
+                console.warn('[DEBUG] Returning cached result');
                 return cached;
             }
+            console.warn('[DEBUG] No cached result found');
         }
 
+        console.warn('[DEBUG] Getting client...');
         const client = await this.getClient();
 
         // Check for cancellation after async operation
         if (token?.isCancellationRequested) {
+            console.warn('[DEBUG] Request cancelled after getClient');
             throw new MistralClientError('Request cancelled', 'CANCELLED');
         }
+
+        console.warn('[DEBUG] Model:', this.config.model);
+        console.warn('[DEBUG] Max tokens:', this.config.maxTokens);
+        console.warn('[DEBUG] Temperature:', this.config.temperature);
 
         const request: FIMCompletionRequest = {
             model: this.config.model,
@@ -230,24 +316,58 @@ export class MistralClient {
             stream: false,
         };
 
+        console.warn('[DEBUG] About to call client.fim.complete...');
+        console.warn('[DEBUG] Request model:', request.model);
+        console.warn('[DEBUG] Request prompt length:', request.prompt?.length || 0);
+        console.warn('[DEBUG] Request suffix length:', request.suffix?.length || 0);
+        console.warn('[DEBUG] Request maxTokens:', request.maxTokens);
+        console.warn('[DEBUG] Request stream:', request.stream);
         try {
             const response: FIMCompletionResponse = await client.fim.complete(request);
+            console.warn('[DEBUG] Received response from Mistral API');
+            console.warn('[DEBUG] Response status: success');
             const content = this.extractContent(response.choices[0]?.message?.content || null);
             const result = content || null;
 
+            console.warn('[DEBUG] Extracted content length:', content.length);
+            console.warn('[DEBUG] Result:', result ? 'has content' : 'null');
+
             // Cache the result if enabled and we got a result
             if (this.config.cacheEnabled && result !== null) {
+                console.warn('[DEBUG] Caching result...');
                 const cacheKey = this.generateCacheKey(prefix, suffix);
                 this.cache.set(cacheKey, result, this.config.cacheTTL);
             }
 
             return result;
         } catch (error) {
+            console.warn('[DEBUG] Error in getCompletion:', error);
+            if (error instanceof Error) {
+                console.warn('[DEBUG] Error name:', error.name);
+                console.warn('[DEBUG] Error message:', error.message);
+                console.warn('[DEBUG] Error stack:', error.stack);
+            }
+
+            // Special handling for "no Route matched with those values" error
+            if (error instanceof Error && error.message.includes('no Route matched')) {
+                console.warn('[ERROR] URL construction issue detected!');
+                console.warn('[ERROR] The SDK cannot find the FIM endpoint.');
+                console.warn(
+                    '[ERROR] This typically happens when serverURL includes /v1 and the SDK appends it again.'
+                );
+                console.warn(
+                    '[ERROR] Try setting serverURL to: https://codestral.mistral.ai (without /v1)'
+                );
+                console.warn('[ERROR] Or: https://api.mistral.ai (without /v1)');
+            }
+
             if (error instanceof MistralError) {
-                console.error(`Mistral API Error [${error.statusCode}]: ${error.message}`);
+                console.warn('[DEBUG] MistralError statusCode:', error.statusCode);
+                console.warn('[DEBUG] MistralError body:', error.body);
+                logger.error(`Mistral API Error [${error.statusCode}]: ${error.message}`, error);
                 // Log additional details for validation errors
                 if (error instanceof HTTPValidationError) {
-                    console.error('Validation errors:', error.data$.detail);
+                    logger.error('Validation errors:', error.data$.detail);
                 }
             }
             throw this.handleError(error);
@@ -271,17 +391,25 @@ export class MistralClient {
         suffix?: string,
         token?: vscode.CancellationToken
     ): AsyncGenerator<string, void, unknown> {
+        console.warn('[DEBUG] MistralClient.getStreamingCompletion called');
         // Check for cancellation
         if (token?.isCancellationRequested) {
+            console.warn('[DEBUG] Request cancelled in getStreamingCompletion');
             throw new MistralClientError('Request cancelled', 'CANCELLED');
         }
 
+        console.warn('[DEBUG] Getting client for streaming...');
         const client = await this.getClient();
 
         // Check for cancellation after async operation
         if (token?.isCancellationRequested) {
+            console.warn('[DEBUG] Request cancelled after getClient in streaming');
             throw new MistralClientError('Request cancelled', 'CANCELLED');
         }
+
+        console.warn('[DEBUG] Model:', this.config.model);
+        console.warn('[DEBUG] Max tokens:', this.config.maxTokens);
+        console.warn('[DEBUG] Temperature:', this.config.temperature);
 
         const request: FIMCompletionStreamRequest = {
             model: this.config.model,
@@ -294,12 +422,24 @@ export class MistralClient {
             stream: true,
         };
 
+        console.warn('[DEBUG] About to call client.fim.stream...');
+        console.warn('[DEBUG] Request model:', request.model);
+        console.warn('[DEBUG] Request prompt length:', request.prompt?.length || 0);
+        console.warn('[DEBUG] Request suffix length:', request.suffix?.length || 0);
+        console.warn('[DEBUG] Request maxTokens:', request.maxTokens);
+        console.warn('[DEBUG] Request stream:', request.stream);
         try {
             const stream = await client.fim.stream(request);
+            console.warn('[DEBUG] Stream created, starting to read events...');
 
+            let eventCount = 0;
+            let chunkCount = 0;
             for await (const event of stream) {
+                eventCount++;
+
                 // Check for cancellation during streaming
                 if (token?.isCancellationRequested) {
+                    console.warn('[DEBUG] Streaming cancelled, breaking');
                     break;
                 }
 
@@ -308,20 +448,51 @@ export class MistralClient {
                 if (choice?.delta?.content) {
                     const content = this.extractContent(choice.delta.content);
                     if (content) {
+                        chunkCount++;
+                        console.warn(
+                            '[DEBUG] Yielding chunk',
+                            chunkCount,
+                            'length:',
+                            content.length
+                        );
                         yield content;
                     }
                 }
 
                 if (choice?.finishReason) {
+                    console.warn('[DEBUG] Stream finished, reason:', choice.finishReason);
                     break;
                 }
             }
+            console.warn('[DEBUG] Stream loop ended, events:', eventCount, 'chunks:', chunkCount);
         } catch (error) {
+            console.warn('[DEBUG] Error in getStreamingCompletion:', error);
+            if (error instanceof Error) {
+                console.warn('[DEBUG] Error name:', error.name);
+                console.warn('[DEBUG] Error message:', error.message);
+                console.warn('[DEBUG] Error stack:', error.stack);
+            }
+
+            // Special handling for "no Route matched with those values" error
+            if (error instanceof Error && error.message.includes('no Route matched')) {
+                console.warn('[ERROR] URL construction issue detected!');
+                console.warn('[ERROR] The SDK cannot find the FIM endpoint.');
+                console.warn(
+                    '[ERROR] This typically happens when serverURL includes /v1 and the SDK appends it again.'
+                );
+                console.warn(
+                    '[ERROR] Try setting serverURL to: https://codestral.mistral.ai (without /v1)'
+                );
+                console.warn('[ERROR] Or: https://api.mistral.ai (without /v1)');
+            }
+
             if (error instanceof MistralError) {
-                console.error(`Mistral API Error [${error.statusCode}]: ${error.message}`);
+                console.warn('[DEBUG] MistralError statusCode:', error.statusCode);
+                console.warn('[DEBUG] MistralError body:', error.body);
+                logger.error(`Mistral API Error [${error.statusCode}]: ${error.message}`, error);
                 // Log additional details for validation errors
                 if (error instanceof HTTPValidationError) {
-                    console.error('Validation errors:', error.data$.detail);
+                    logger.error('Validation errors:', error.data$.detail);
                 }
             }
             throw this.handleError(error);
@@ -344,8 +515,13 @@ export class MistralClient {
 
             switch (statusCode) {
                 case 401:
+                    // Provide helpful hints for 401 errors
+                    const endpointHint = this.config.apiBaseUrl.includes('codestral')
+                        ? '\n\nMake sure you have a Codestral-specific API key from https://console.mistral.ai/'
+                        : '\n\nMake sure you have a regular Mistral API key from https://console.mistral.ai/';
+
                     return new MistralClientError(
-                        'Invalid API key. Please check your Mistral API key.',
+                        `Invalid API key. Please check your API key settings.${endpointHint}`,
                         'INVALID_API_KEY',
                         error
                     );

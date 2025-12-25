@@ -3,7 +3,7 @@
  *
  * This module provides a simple logging utility with different log levels.
  *
- * TODO: Implement logger utility
+ * Features:
  * - Support different log levels (debug, info, warn, error)
  * - Add timestamp to log messages
  * - Support output channel for VS Code
@@ -27,31 +27,31 @@ export class Logger {
         this.minLevel = minLevel;
     }
 
-    debug(message: string, ...data: any[]): void {
+    debug(message: string, ...data: unknown[]): void {
         if (this.shouldLog(LogLevel.DEBUG)) {
             this.log(LogLevel.DEBUG, message, ...data);
         }
     }
 
-    info(message: string, ...data: any[]): void {
+    info(message: string, ...data: unknown[]): void {
         if (this.shouldLog(LogLevel.INFO)) {
             this.log(LogLevel.INFO, message, ...data);
         }
     }
 
-    warn(message: string, ...data: any[]): void {
+    warn(message: string, ...data: unknown[]): void {
         if (this.shouldLog(LogLevel.WARN)) {
             this.log(LogLevel.WARN, message, ...data);
         }
     }
 
-    error(message: string, error?: any, ...data: any[]): void {
+    error(message: string, error?: unknown, ...data: unknown[]): void {
         if (this.shouldLog(LogLevel.ERROR)) {
             this.log(LogLevel.ERROR, message, error, ...data);
         }
     }
 
-    private log(level: LogLevel, message: string, ...data: any[]): void {
+    private log(level: LogLevel, message: string, ...data: unknown[]): void {
         const timestamp = new Date().toISOString();
         const logMessage = `[${timestamp}] [${level}] ${message}`;
         this.outputChannel.appendLine(logMessage);
