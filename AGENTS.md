@@ -4,6 +4,38 @@
 
 Predicte is a lightweight AI-powered autocomplete extension for VS Code using Mistral's Codestral model. The project follows TypeScript best practices with a focus on clean, maintainable code.
 
+## Specialist Agent Usage
+
+### When to Invoke Specialists
+
+- **builder**: For implementing features, fixing bugs, or making code changes
+- **senior-builder**: Use this specialist when `builder` is unable to resolve complex issues or when the codebase requires significant refactoring.
+- **reviewer**: Review code before moving to QA
+- **qa-specialist**: Audit code, verifies file structures, and runs tests
+- **debugger**: When encountering bugs, issues, runtime errors or logical bugs
+- **researcher**: For gathering documentation, examples, or best practices
+- **git-committer**: To commit changes with appropriate messages
+- **vitest-specialist**: For writing and maintaining tests (when tests are added)
+- **technical-writer**: For adding, updating, or fixing documentation
+- **maintenance-specialist**: Handles debt reduction, log removal, formatting, and file deletion.
+
+### Workflow Guidelines
+
+1. **Plan**: Understand requirements and create implementation plan
+2. **Build**: Use builder agent to implement changes
+3. **Review**: Use reviewer agent to check code quality
+4. **Test**: Use QA specialist to validate functionality
+5. **Commit**: Use git committer to save changes
+
+### Tool Usage Guidelines
+
+- **gh_grep**: Search real-world code examples from GitHub
+- **context7**: Fetch up-to-date documentation for libraries
+- **exa**: General web searches and content extraction
+- **exa**: Extracts content from specific URLs
+- **exa**: Search and get relevant code snippets, examples, and documentation from open source libraries, GitHub repositories, and programming frameworks.
+- **playwright**: UI testing (when applicable)
+
 ## Build & Development Commands
 
 ### Core Commands
@@ -48,22 +80,6 @@ npm run pretest           # Run before tests: compile-tests + compile + lint
 - No implicit returns: Enabled
 - Source maps: Enabled for debugging
 
-### Import Conventions
-
-```typescript
-// External dependencies first
-import * as vscode from 'vscode';
-import { Mistral } from '@mistralai/mistralai';
-
-// Internal modules grouped by type
-import { PredicteConfig } from '../managers/configManager';
-import { PredicteSecretStorage } from './secretStorage';
-import { CacheManager } from '../managers/cacheManager';
-
-// Type imports for type-only dependencies
-import type { MistralError } from '@mistralai/mistralai/models/errors/mistralerror.js';
-```
-
 ### Naming Conventions
 
 - **Classes**: PascalCase (e.g., `CodestralAPIClient`, `CacheManager`)
@@ -73,42 +89,6 @@ import type { MistralError } from '@mistralai/mistralai/models/errors/mistralerr
 - **Constants**: UPPER_SNAKE_CASE (e.g., `MAX_RETRIES`)
 - **Private members**: camelCase with underscore prefix NOT used (e.g., `private cache: CacheManager`)
 - **File names**: camelCase for implementation files (e.g., `apiClient.ts`)
-
-### Error Handling
-
-```typescript
-// Custom error classes with error codes
-export class APIClientError extends Error {
-    constructor(
-        message: string,
-        public readonly code: string,
-        public readonly cause?: unknown
-    ) {
-        super(message);
-        this.name = 'APIClientError';
-    }
-}
-
-// Use error codes for different error types
-throw new APIClientError('API key not found', 'MISSING_API_KEY');
-throw new APIClientError('Rate limit exceeded', 'RATE_LIMIT', error);
-
-// Handle errors with specific error codes
-try {
-    await client.getCompletion(request);
-} catch (error) {
-    if (error instanceof APIClientError && error.code === 'RATE_LIMIT') {
-        // Handle rate limit specifically
-    }
-}
-```
-
-### Async/Await Patterns
-
-- Always use `async/await` over raw promises
-- Mark async functions with explicit return types
-- Use `try/catch` for error handling in async functions
-- Avoid floating promises - ESLint enforces `@typescript-eslint/no-floating-promises`
 
 ### Documentation Standards
 
@@ -150,25 +130,6 @@ src/
     └── logger.ts               # Logging utility
 ```
 
-### ESLint Rules (enforced)
-
-- `@typescript-eslint/no-explicit-any`: warn (avoid `any` type)
-- `@typescript-eslint/no-unused-vars`: error (ignore args with `^_` prefix)
-- `@typescript-eslint/no-floating-promises`: error (prevent unhandled promises)
-- `@typescript-eslint/no-misused-promises`: error (prevent promise misuse)
-- `no-console`: warn (allow only `console.warn` and `console.error`)
-
-### Prettier Configuration
-
-- Semi-colons: required
-- Trailing commas: ES5 style
-- Single quotes: yes
-- Print width: 100 characters
-- Tab width: 4 spaces
-- Use tabs: false
-- Arrow parens: always
-- End of line: LF
-
 ### Type Safety Guidelines
 
 - Use `strict: true` in TypeScript configuration
@@ -201,33 +162,6 @@ src/
 - Cache key includes model, parameters, and prompt
 - Clear cache on configuration changes
 - Provide cache statistics
-
-## Specialist Agent Usage
-
-### When to Invoke Specialists
-
-- **Builder**: For implementing features, fixing bugs, or making code changes
-- **Reviewer**: After builder completes work, before moving to QA
-- **QA Specialist**: After reviewer approves, to validate implementation
-- **Debugger**: When encountering runtime errors or logical bugs
-- **Researcher**: For gathering documentation, examples, or best practices
-- **Git Committer**: To commit changes with appropriate messages
-- **Vitest Specialist**: For writing and maintaining tests (when tests are added)
-
-### Workflow Guidelines
-
-1. **Plan**: Understand requirements and create implementation plan
-2. **Build**: Use builder agent to implement changes
-3. **Review**: Use reviewer agent to check code quality
-4. **Test**: Use QA specialist to validate functionality
-5. **Commit**: Use git committer to save changes
-
-### Tool Usage Guidelines
-
-- **gh_grep**: Search real-world code examples from GitHub
-- **context7**: Fetch up-to-date documentation for libraries
-- **web-search-prime**: General web searches for information
-- **playwright**: UI testing (when applicable)
 
 ## Development Environment
 
