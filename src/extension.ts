@@ -43,6 +43,13 @@ export function activate(context: vscode.ExtensionContext): void {
     logger,
   );
 
+  // Watch for debug mode changes
+  const debugModeWatcher = config.watchChanges(() => {
+    const newLogLevel = config.debugMode ? LogLevel.DEBUG : LogLevel.INFO;
+    logger.setMinLevel(newLogLevel);
+  });
+  context.subscriptions.push(debugModeWatcher);
+
   // Register the inline completion provider for all languages
   const providerDisposable =
     vscode.languages.registerInlineCompletionItemProvider(

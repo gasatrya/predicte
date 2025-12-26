@@ -46,7 +46,7 @@ export class PredicteCompletionProvider
   ) {
     this.config = config;
     this.logger = logger;
-    this.mistralClient = new MistralClient(config, secretStorage);
+    this.mistralClient = new MistralClient(config, secretStorage, logger);
     this.debouncer = new Debouncer<string | null>(config.debounceDelay);
 
     // Watch for configuration changes

@@ -60,7 +60,7 @@ import {
 import type { PredicteConfig } from '../managers/configManager';
 import type { PredicteSecretStorage } from './secretStorage';
 import { CacheManager } from '../managers/cacheManager';
-import { logger } from '../utils/logger';
+import type { Logger } from '../utils/logger';
 import * as crypto from 'node:crypto';
 import { getLanguageParameters } from '../utils/codeUtils';
 
@@ -88,10 +88,16 @@ export class MistralClient {
   private config: PredicteConfig;
   private secretStorage: PredicteSecretStorage;
   private cache: CacheManager<string, string>;
+  private logger: Logger;
 
-  constructor(config: PredicteConfig, secretStorage: PredicteSecretStorage) {
+  constructor(
+    config: PredicteConfig,
+    secretStorage: PredicteSecretStorage,
+    logger: Logger,
+  ) {
     this.config = config;
     this.secretStorage = secretStorage;
+    this.logger = logger;
     this.cache = new CacheManager(100, config.cacheTTL);
   }
 
@@ -106,27 +112,27 @@ export class MistralClient {
 
     // Warn about potential URL construction issues
     if (serverURL.endsWith('/v1') || serverURL.endsWith('/v1/')) {
-      logger.warn(
+      this.logger.warn(
         'serverURL ends with /v1. The SDK may append the path again, causing /v1/v1/... in the final URL.',
       );
-      logger.warn(
+      this.logger.warn(
         'Try removing /v1 from the serverURL setting and use just the base domain.',
       );
     }
 
     // Validate and provide hints about endpoint selection
     if (serverURL.includes('codestral')) {
-      logger.warn(
+      this.logger.warn(
         'Using Codestral endpoint. Make sure you have a Codestral API key.',
       );
-      logger.warn(
+      this.logger.warn(
         'Expected FIM endpoint for Codestral: https://codestral.mistral.ai/v1/fim/completions',
       );
     } else {
-      logger.warn(
+      this.logger.warn(
         'Using regular Mistral endpoint. Make sure you have a regular Mistral API key.',
       );
-      logger.warn(
+      this.logger.warn(
         'Expected FIM endpoint for Mistral: https://api.mistral.ai/v1/fim/completions',
       );
     }
@@ -369,25 +375,25 @@ export class MistralClient {
         error instanceof Error &&
         error.message.includes('no Route matched')
       ) {
-        logger.error('URL construction issue detected!');
-        logger.error('The SDK cannot find the FIM endpoint.');
-        logger.error(
+        this.logger.error('URL construction issue detected!');
+        this.logger.error('The SDK cannot find the FIM endpoint.');
+        this.logger.error(
           'This typically happens when serverURL includes /v1 and the SDK appends it again.',
         );
-        logger.error(
+        this.logger.error(
           'Try setting serverURL to: https://codestral.mistral.ai (without /v1)',
         );
-        logger.error('Or: https://api.mistral.ai (without /v1)');
+        this.logger.error('Or: https://api.mistral.ai (without /v1)');
       }
 
       if (error instanceof MistralError) {
-        logger.error(
+        this.logger.error(
           `Mistral API Error [${error.statusCode}]: ${error.message}`,
           error,
         );
         // Log additional details for validation errors
         if (error instanceof HTTPValidationError) {
-          logger.error('Validation errors:', error.data$.detail);
+          this.logger.error('Validation errors:', error.data$.detail);
         }
       }
       throw this.handleError(error);
@@ -541,25 +547,25 @@ export class MistralClient {
         error instanceof Error &&
         error.message.includes('no Route matched')
       ) {
-        logger.error('URL construction issue detected!');
-        logger.error('The SDK cannot find the FIM endpoint.');
-        logger.error(
+        this.logger.error('URL construction issue detected!');
+        this.logger.error('The SDK cannot find the FIM endpoint.');
+        this.logger.error(
           'This typically happens when serverURL includes /v1 and the SDK appends it again.',
         );
-        logger.error(
+        this.logger.error(
           'Try setting serverURL to: https://codestral.mistral.ai (without /v1)',
         );
-        logger.error('Or: https://api.mistral.ai (without /v1)');
+        this.logger.error('Or: https://api.mistral.ai (without /v1)');
       }
 
       if (error instanceof MistralError) {
-        logger.error(
+        this.logger.error(
           `Mistral API Error [${error.statusCode}]: ${error.message}`,
           error,
         );
         // Log additional details for validation errors
         if (error instanceof HTTPValidationError) {
-          logger.error('Validation errors:', error.data$.detail);
+          this.logger.error('Validation errors:', error.data$.detail);
         }
       }
       throw this.handleError(error);

@@ -88,6 +88,10 @@ export class Logger {
   dispose(): void {
     this.outputChannel.dispose();
   }
+
+  setMinLevel(level: LogLevel): void {
+    this.minLevel = level;
+  }
 }
 
 // Global logger instance
