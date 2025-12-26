@@ -200,12 +200,6 @@ export function getDefaultLanguageParameters(): LanguageParameters {
  * @returns Sanitized completion text
  */
 export function sanitizeCompletion(text: string): string {
-  console.warn('[DEBUG] sanitizeCompletion called, input length:', text.length);
-  console.warn(
-    '[DEBUG] Input preview (first 200 chars):',
-    text.substring(0, 200),
-  );
-
   let sanitized = text;
 
   // Remove markdown code block markers
@@ -229,7 +223,6 @@ export function sanitizeCompletion(text: string): string {
   for (const prefix of prefixes) {
     if (sanitized.startsWith(prefix)) {
       sanitized = sanitized.substring(prefix.length);
-      console.warn('[DEBUG] Removed prefix:', prefix);
       break;
     }
   }
@@ -239,12 +232,6 @@ export function sanitizeCompletion(text: string): string {
 
   // Remove excessive newlines (more than 2 in a row)
   sanitized = sanitized.replace(/\n{3,}/g, '\n\n');
-
-  console.warn('[DEBUG] Sanitized length:', sanitized.length);
-  console.warn(
-    '[DEBUG] Sanitized preview (first 200 chars):',
-    sanitized.substring(0, 200),
-  );
 
   return sanitized;
 }
@@ -375,34 +362,21 @@ export function isInsideString(line: string, position: number): boolean {
  * @returns true if the completion is valid
  */
 export function isValidCompletion(completion: string): boolean {
-  console.warn('[DEBUG] isValidCompletion called, length:', completion.length);
-  console.warn(
-    '[DEBUG] Completion preview (first 200 chars):',
-    completion.substring(0, 200),
-  );
-
   if (!completion || completion.length === 0) {
-    console.warn('[DEBUG] Completion is empty or null, returning false');
     return false;
   }
 
   const trimmed = completion.trim();
   if (trimmed.length === 0) {
-    console.warn('[DEBUG] Completion is only whitespace, returning false');
     return false;
   }
 
   // Check if completion is only whitespace or special characters
   const meaningfulChars = trimmed.replace(/[\s\r\n\t]/g, '');
   if (meaningfulChars.length === 0) {
-    console.warn(
-      '[DEBUG] Completion has no meaningful characters, returning false',
-    );
     return false;
   }
 
-  console.warn('[DEBUG] Completion is valid, returning true');
-  console.warn('[DEBUG] Meaningful chars length:', meaningfulChars.length);
   return true;
 }
 
@@ -482,9 +456,6 @@ export function scoreCompletion(
   suffix: string,
   languageId?: string,
 ): ScoreDetails {
-  console.warn('[DEBUG] Scoring completion...');
-  console.warn('[DEBUG] Candidate length:', candidate.length);
-
   const relevanceScore = calculateRelevanceScore(candidate, prefix, suffix);
   const codeQualityScore = calculateCodeQualityScore(candidate, languageId);
   const lengthScore = calculateLengthScore(candidate, prefix, suffix);
@@ -499,11 +470,6 @@ export function scoreCompletion(
     lengthScore,
     languagePatternScore,
   };
-
-  console.warn('[DEBUG] Relevance score:', relevanceScore);
-  console.warn('[DEBUG] Code quality score:', codeQualityScore);
-  console.warn('[DEBUG] Length score:', lengthScore);
-  console.warn('[DEBUG] Language pattern score:', languagePatternScore);
 
   return details;
 }
@@ -755,14 +721,10 @@ export function filterCandidates(
   prefix: string,
   suffix: string,
 ): CompletionCandidate[] {
-  console.warn('[DEBUG] Filtering candidates...');
-  console.warn('[DEBUG] Input candidates:', candidates.length);
-
   const filtered = candidates.filter((candidate) => {
     // Check minimum meaningful length
     const meaningfulChars = candidate.text.replace(/[\s\r\n\t]/g, '');
     if (meaningfulChars.length < 3) {
-      console.warn('[DEBUG] Filtered: Too short');
       return false;
     }
 
@@ -773,7 +735,6 @@ export function filterCandidates(
       details.relevanceScore < 0.2 ||
       details.languagePatternScore < 0.2
     ) {
-      console.warn('[DEBUG] Filtered: Low quality score');
       return false;
     }
 
@@ -782,14 +743,12 @@ export function filterCandidates(
       prefix.includes(candidate.text.trim()) ||
       suffix.includes(candidate.text.trim())
     ) {
-      console.warn('[DEBUG] Filtered: Duplicate existing code');
       return false;
     }
 
     return true;
   });
 
-  console.warn('[DEBUG] Filtered candidates:', filtered.length);
   return filtered;
 }
 
@@ -808,9 +767,6 @@ export function filterCandidates(
 export function rankCandidates(
   candidates: CompletionCandidate[],
 ): CompletionCandidate[] {
-  console.warn('[DEBUG] Ranking candidates...');
-  console.warn('[DEBUG] Input candidates:', candidates.length);
-
   // Calculate final weighted score for each candidate
   const scored = candidates.map((candidate) => {
     const details = candidate.details;
@@ -828,14 +784,6 @@ export function rankCandidates(
 
   // Sort by score (highest first)
   const ranked = scored.sort((a, b) => b.score - a.score);
-
-  console.warn('[DEBUG] Ranked candidates:', ranked.length);
-  if (ranked.length > 0) {
-    console.warn('[DEBUG] Top candidate score:', ranked[0].score);
-    if (ranked.length > 1) {
-      console.warn('[DEBUG] Second candidate score:', ranked[1].score);
-    }
-  }
 
   return ranked;
 }
@@ -857,11 +805,7 @@ export function getBestCompletion(
   suffix: string,
   languageId?: string,
 ): string | null {
-  console.warn('[DEBUG] Getting best completion from candidates...');
-  console.warn('[DEBUG] Number of candidates:', candidates.length);
-
   if (candidates.length === 0) {
-    console.warn('[DEBUG] No candidates provided');
     return null;
   }
 
@@ -875,7 +819,6 @@ export function getBestCompletion(
   const filtered = filterCandidates(scoredCandidates, prefix, suffix);
 
   if (filtered.length === 0) {
-    console.warn('[DEBUG] No candidates passed filtering');
     return null;
   }
 
@@ -884,8 +827,6 @@ export function getBestCompletion(
 
   // Return the best candidate
   const best = ranked[0];
-  console.warn('[DEBUG] Best completion selected with score:', best.score);
-  console.warn('[DEBUG] Best completion text:', best.text.substring(0, 100));
 
   return best.text;
 }

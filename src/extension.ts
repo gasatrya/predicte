@@ -9,7 +9,7 @@ import * as vscode from 'vscode';
 import { PredicteConfig } from './managers/configManager';
 import { PredicteSecretStorage } from './services/secretStorage';
 import { PredicteCompletionProvider } from './providers/completionProvider';
-import { Logger } from './utils/logger';
+import { Logger, LogLevel } from './utils/logger';
 
 /**
  * Module-level instances
@@ -26,13 +26,15 @@ let logger: Logger;
  * @param {vscode.ExtensionContext} context - The extension context
  */
 export function activate(context: vscode.ExtensionContext): void {
-  console.warn('[Predicte][DEBUG] Extension activating...');
   // Extension is now active
 
   // Initialize configuration manager, secret storage, and logger
   config = new PredicteConfig();
   secretStorage = new PredicteSecretStorage(context);
-  logger = new Logger('Predicte');
+
+  // Set log level based on debug mode configuration
+  const logLevel = config.debugMode ? LogLevel.DEBUG : LogLevel.INFO;
+  logger = new Logger('Predicte', logLevel);
 
   // Initialize completion provider
   completionProvider = new PredicteCompletionProvider(
@@ -48,9 +50,6 @@ export function activate(context: vscode.ExtensionContext): void {
       completionProvider,
     );
   context.subscriptions.push(providerDisposable);
-  console.warn(
-    '[Predicte][DEBUG] Inline completion provider registered for all files',
-  );
 
   // Register toggle command
   const toggleCommand = vscode.commands.registerCommand(

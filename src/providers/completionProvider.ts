@@ -87,35 +87,18 @@ export class PredicteCompletionProvider
     | undefined
     | null
   > {
-    console.warn('[DEBUG] provideInlineCompletionItems called');
-    console.warn('[DEBUG] Document:', document.uri.toString());
-    console.warn('[DEBUG] Language:', document.languageId);
-    console.warn(
-      '[DEBUG] Position:',
-      `line ${position.line}, char ${position.character}`,
-    );
-    console.warn('[DEBUG] Trigger kind:', context.triggerKind);
-    console.warn('[DEBUG] Is cancelled:', token.isCancellationRequested);
-
     // Check if extension is enabled
     if (!this.config.enabled) {
-      console.warn('[DEBUG] Extension is disabled in configuration');
       this.logger.debug('Completion provider disabled');
       return null;
     }
-    console.warn('[DEBUG] Extension is enabled');
 
     // Check if should trigger
     const shouldTriggerResult = this.shouldTrigger(document, position, context);
-    console.warn('[DEBUG] shouldTrigger result:', shouldTriggerResult);
     if (!shouldTriggerResult) {
-      console.warn(
-        '[DEBUG] Skipping completion (shouldTrigger returned false)',
-      );
       this.logger.debug('Skipping completion (shouldTrigger returned false)');
       return null;
     }
-    console.warn('[DEBUG] Should trigger check passed');
 
     // Check for cancellation
     if (token.isCancellationRequested) {
@@ -124,38 +107,19 @@ export class PredicteCompletionProvider
     }
 
     try {
-      console.warn('[DEBUG] About to start debounced API call');
       // Use debouncing to prevent excessive API calls
       const completion = await this.debouncer.debounce(async () => {
-        console.warn('[DEBUG] Debounced callback executing');
         // Check for cancellation again
         if (token.isCancellationRequested) {
-          console.warn('[DEBUG] Request cancelled in debounced callback');
           return null;
         }
 
         // Extract context
-        console.warn('[DEBUG] Extracting context...');
         const codeContext = extractContext(
           document,
           position,
           this.config.contextLines,
           this.config.enhancedContextEnabled,
-        );
-        console.warn('[DEBUG] Context extracted successfully');
-        console.warn('[DEBUG] Prefix length:', codeContext.prefix.length);
-        console.warn('[DEBUG] Suffix length:', codeContext.suffix.length);
-        console.warn(
-          '[DEBUG] Prefix preview (first 100 chars):',
-          codeContext.prefix.substring(0, 100),
-        );
-        console.warn(
-          '[DEBUG] Enhanced context enabled:',
-          this.config.enhancedContextEnabled,
-        );
-        console.warn(
-          '[DEBUG] Prompt engineering enabled:',
-          this.config.promptEngineeringEnabled,
         );
 
         // Format context with system prompt if prompt engineering is enabled
@@ -185,17 +149,6 @@ export class PredicteCompletionProvider
           systemPrompt = formattedContext.systemPrompt;
         }
 
-        console.warn(
-          '[DEBUG] After truncation - Prefix length:',
-          prefix.length,
-          'Suffix length:',
-          suffix.length,
-        );
-        console.warn(
-          '[DEBUG] System prompt length:',
-          systemPrompt?.length ?? 0,
-        );
-
         this.logger.debug(
           `Requesting completion for ${document.languageId} at line ${position.line}`,
         );
@@ -203,18 +156,8 @@ export class PredicteCompletionProvider
           `Prefix length: ${prefix.length}, Suffix length: ${suffix.length}`,
         );
 
-        console.warn(
-          '[DEBUG] Checking if streaming is enabled:',
-          this.config.enableStreaming,
-        );
-        console.warn(
-          '[DEBUG] Quality filtering enabled:',
-          this.config.qualityFilteringEnabled,
-        );
-
         // Get completion from Mistral API
         let result: string | null = null;
-        console.warn('[DEBUG] About to make API call to Mistral...');
 
         // Quality filtering doesn't work well with streaming
         // Fall back to single completion if streaming is enabled
@@ -224,7 +167,7 @@ export class PredicteCompletionProvider
         ) {
           // Use single completion (streaming or non-streaming)
           if (this.config.enableStreaming) {
-            console.warn('[DEBUG] Using streaming completion');
+            this.logger.debug('Using streaming completion');
             result = await this.getStreamingCompletion(
               prefix,
               suffix,
@@ -233,7 +176,7 @@ export class PredicteCompletionProvider
               document.languageId,
             );
           } else {
-            console.warn('[DEBUG] Using non-streaming completion');
+            this.logger.debug('Using non-streaming completion');
             result = await this.mistralClient.getCompletion(
               prefix,
               suffix,
@@ -244,11 +187,9 @@ export class PredicteCompletionProvider
           }
         } else {
           // Use quality filtering with multiple candidates
-          console.warn(
-            '[DEBUG] Using quality filtering with multiple candidates',
-          );
+          this.logger.debug('Using quality filtering with multiple candidates');
           const numCandidates = this.config.numCandidates;
-          console.warn('[DEBUG] Requesting', numCandidates, 'candidates');
+          this.logger.debug(`Requesting ${numCandidates} candidates`);
 
           const candidates = await this.mistralClient.getMultipleCompletions(
             prefix,
@@ -263,7 +204,7 @@ export class PredicteCompletionProvider
           const validCandidates = candidates.filter(
             (c): c is string => c !== null,
           );
-          console.warn('[DEBUG] Valid candidates:', validCandidates.length);
+          this.logger.debug(`Valid candidates: ${validCandidates.length}`);
 
           if (validCandidates.length > 0) {
             // Select the best completion using quality filtering
@@ -273,28 +214,17 @@ export class PredicteCompletionProvider
               suffix,
               document.languageId,
             );
-            console.warn(
-              '[DEBUG] Best completion selected:',
-              result ? 'success' : 'null',
+            this.logger.debug(
+              `Best completion selected: ${result ? 'success' : 'null'}`,
             );
           } else {
-            console.warn('[DEBUG] No valid candidates found');
+            this.logger.debug('No valid candidates found');
           }
         }
-
-        console.warn(
-          '[DEBUG] API call completed, result:',
-          result ? 'received' : 'null',
-        );
 
         if (result) {
           this.logger.debug(
             `Received completion: ${result.substring(0, 100)}...`,
-          );
-          console.warn('[DEBUG] Completion length:', result.length);
-          console.warn(
-            '[DEBUG] Completion preview (first 200 chars):',
-            result.substring(0, 200),
           );
         }
 
@@ -303,48 +233,24 @@ export class PredicteCompletionProvider
 
       // Return null if no completion
       if (!completion) {
-        console.warn('[DEBUG] No completion received, returning null');
         return null;
       }
-      console.warn('[DEBUG] Completion received successfully');
 
       // Sanitize completion
-      console.warn('[DEBUG] Sanitizing completion...');
       const sanitized = sanitizeCompletion(completion);
-      console.warn(
-        '[DEBUG] Sanitized completion:',
-        sanitized ? 'success' : 'failed',
-      );
 
       // Validate completion
-      console.warn('[DEBUG] Validating completion...');
       if (!isValidCompletion(sanitized)) {
-        console.warn(
-          '[DEBUG] Completion invalid after sanitization, returning null',
-        );
         this.logger.debug('Completion invalid after sanitization');
         return null;
       }
-      console.warn('[DEBUG] Completion is valid');
 
       // Create inline completion item
-      console.warn('[DEBUG] Creating inline completion item...');
       const item = new vscode.InlineCompletionItem(sanitized);
 
-      console.warn(
-        '[DEBUG] Returning completion item:',
-        sanitized.substring(0, 100),
-      );
       this.logger.debug('Returning completion item');
       return [item];
     } catch (error) {
-      console.warn('[DEBUG] Error occurred in provideInlineCompletionItems');
-      console.warn('[DEBUG] Error:', error);
-      if (error instanceof Error) {
-        console.warn('[DEBUG] Error message:', error.message);
-        console.warn('[DEBUG] Error name:', error.name);
-        console.warn('[DEBUG] Error stack:', error.stack);
-      }
       return this.handleError(error);
     }
   }
@@ -369,12 +275,10 @@ export class PredicteCompletionProvider
     systemPrompt?: string,
     languageId?: string,
   ): Promise<string | null> {
-    console.warn('[DEBUG] getStreamingCompletion called');
     const chunks: string[] = [];
     let chunkCount = 0;
 
     try {
-      console.warn('[DEBUG] Starting streaming loop');
       for await (const chunk of this.mistralClient.getStreamingCompletion(
         prefix,
         suffix,
@@ -383,29 +287,20 @@ export class PredicteCompletionProvider
         languageId,
       )) {
         if (token.isCancellationRequested) {
-          console.warn('[DEBUG] Streaming request cancelled');
           this.logger.debug('Streaming request cancelled');
           return null;
         }
         chunkCount++;
         chunks.push(chunk);
-        console.warn(
-          '[DEBUG] Received chunk',
-          chunkCount,
-          'length:',
-          chunk.length,
+        this.logger.debug(
+          `Received chunk ${chunkCount}, length: ${chunk.length}`,
         );
       }
-      console.warn('[DEBUG] Streaming completed, total chunks:', chunkCount);
 
       const result = chunks.length > 0 ? chunks.join('') : null;
-      console.warn(
-        '[DEBUG] Streaming result:',
-        result ? 'has content' : 'empty',
-      );
+      this.logger.debug(`Streaming completed, total chunks: ${chunkCount}`);
       return result;
     } catch (error) {
-      console.warn('[DEBUG] Error in getStreamingCompletion:', error);
       if (error instanceof MistralClientError && error.code === 'CANCELLED') {
         return null;
       }
@@ -428,44 +323,31 @@ export class PredicteCompletionProvider
     position: vscode.Position,
     context: vscode.InlineCompletionContext,
   ): boolean {
-    console.warn('[DEBUG] shouldTrigger called');
-    console.warn('[DEBUG] context.triggerKind:', context.triggerKind);
-
     // Check internal trigger logic (strings, empty lines, etc.)
     const internalTrigger = shouldTriggerInternal(document, position);
-    console.warn('[DEBUG] shouldTriggerInternal result:', internalTrigger);
     if (!internalTrigger) {
-      console.warn('[DEBUG] shouldTriggerInternal returned false');
       return false;
     }
 
     // Don't trigger if the user is actively typing in a completion
     // that was just accepted (VS Code's trigger kind will be 'Invoke' in that case)
     if (context.triggerKind === vscode.InlineCompletionTriggerKind.Invoke) {
-      console.warn('[DEBUG] Trigger kind is Invoke, allowing trigger');
       // Only trigger on explicit invoke if user pressed the shortcut
       return true;
     }
 
     // For automatic triggering, additional checks
     if (context.triggerKind === vscode.InlineCompletionTriggerKind.Automatic) {
-      console.warn(
-        '[DEBUG] Trigger kind is Automatic, doing additional checks',
-      );
       const line = document.lineAt(position.line);
       const text = line.text.substring(0, position.character);
-      console.warn('[DEBUG] Text before cursor:', JSON.stringify(text));
 
       // Don't trigger if the line ends with common punctuation
       const lastChar = text.trim().slice(-1);
-      console.warn('[DEBUG] Last character:', JSON.stringify(lastChar));
       if (['.', ';', ',', '}', ']', ')'].includes(lastChar)) {
-        console.warn('[DEBUG] Line ends with punctuation, skipping');
         return false;
       }
     }
 
-    console.warn('[DEBUG] All trigger checks passed, returning true');
     return true;
   }
 
@@ -478,10 +360,7 @@ export class PredicteCompletionProvider
    * @returns null to indicate no completion available
    */
   private handleError(error: unknown): null {
-    console.warn('[DEBUG] handleError called with error:', error);
     if (error instanceof MistralClientError) {
-      console.warn('[DEBUG] MistralClientError code:', error.code);
-      console.warn('[DEBUG] MistralClientError message:', error.message);
       this.logger.error(
         `MistralClientError [${error.code}]: ${error.message}`,
         error.cause,

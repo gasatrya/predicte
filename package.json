@@ -175,6 +175,12 @@
           "maximum": 5,
           "description": "Number of completion candidates to request when quality filtering is enabled (more candidates = better quality but slower)",
           "order": 15
+        },
+        "predicte.debugMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable debug logging for troubleshooting (enables verbose debug logs in the output panel)",
+          "order": 16
         }
       }
     },

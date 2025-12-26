@@ -18,9 +18,11 @@
  * - cacheEnabled (boolean): Enable completion caching
  * - cacheTTL (number): Cache TTL in milliseconds (1000-600000)
  * - languageAwareParametersEnabled (boolean): Enable language-specific model parameters
+ * - debugMode (boolean): Enable debug logging for troubleshooting
  */
 
 import * as vscode from 'vscode';
+import { logger } from '../utils/logger';
 
 /**
  * Valid Codestral models
@@ -58,6 +60,7 @@ export interface PredicteConfigValues {
   languageAwareParametersEnabled: boolean;
   qualityFilteringEnabled: boolean;
   numCandidates: number;
+  debugMode: boolean;
   apiKey?: string;
 }
 
@@ -221,6 +224,14 @@ export class PredicteConfig {
   }
 
   /**
+   * Get debug mode status
+   * @returns true if debug mode is enabled
+   */
+  get debugMode(): boolean {
+    return this.config.get<boolean>('debugMode', false);
+  }
+
+  /**
    * Get all configuration values as an object
    * @returns Complete configuration object
    */
@@ -242,6 +253,7 @@ export class PredicteConfig {
       languageAwareParametersEnabled: this.languageAwareParametersEnabled,
       qualityFilteringEnabled: this.qualityFilteringEnabled,
       numCandidates: this.numCandidates,
+      debugMode: this.debugMode,
       apiKey: this.apiKey,
     };
   }
@@ -259,7 +271,7 @@ export class PredicteConfig {
           callback();
         } catch (error) {
           // Log error but don't throw to prevent breaking the extension
-          console.error('Error in configuration change callback:', error);
+          logger.error('Error in configuration change callback', error);
         }
       }
     });

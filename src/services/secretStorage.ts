@@ -13,6 +13,7 @@
  */
 
 import * as vscode from 'vscode';
+import { logger } from '../utils/logger';
 
 /**
  * Error types for secret storage operations
@@ -126,7 +127,7 @@ export class PredicteSecretStorage {
       return apiKey !== undefined && apiKey.length > 0;
     } catch (error) {
       // Log error for debugging but return false to not break the UI
-      console.error('Error checking API key existence:', error);
+      logger.error('Error checking API key existence', error);
       return false;
     }
   }
