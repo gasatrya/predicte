@@ -245,8 +245,22 @@ export class PredicteCompletionProvider
         return null;
       }
 
-      // Create inline completion item
-      const item = new vscode.InlineCompletionItem(sanitized);
+      // Create inline completion item with explicit range
+      const item = new vscode.InlineCompletionItem(
+        sanitized,
+        new vscode.Range(position, position),
+      );
+
+      // Enable bracket pair completion for function signatures and code blocks
+      // Note: completeBracketPairs is a proposed API, using type assertion
+      if (
+        sanitized.startsWith('(') ||
+        sanitized.startsWith('{') ||
+        sanitized.startsWith('[')
+      ) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (item as any).completeBracketPairs = true;
+      }
 
       this.logger.debug('Returning completion item');
       return [item];
