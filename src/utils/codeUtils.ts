@@ -42,7 +42,7 @@ export function getLanguageParameters(languageId: string): LanguageParameters {
     typescript: {
       temperature: 0.1,
       maxTokens: 200,
-      stopSequences: ['\n\n', '}', ';', '```'],
+      stopSequences: ['\n\n', ';', '```'],
     },
     java: {
       temperature: 0.1,
@@ -94,7 +94,7 @@ export function getLanguageParameters(languageId: string): LanguageParameters {
     javascript: {
       temperature: 0.15,
       maxTokens: 150,
-      stopSequences: ['\n\n', '}', ';', '```'],
+      stopSequences: ['\n\n', ';', '```'],
     },
     python: {
       temperature: 0.2,
@@ -363,7 +363,10 @@ export function isInsideString(line: string, position: number): boolean {
  * Check if a completion is valid
  *
  * Validates that the completion is not empty, not just whitespace,
- * and doesn't contain only invalid characters.
+ * and doesn't contain only invalid characters or meaningless patterns.
+ *
+ * Rejects common "I don't know" patterns like `...`, `..`, `.`, `,`, `;`, `:`
+ * while allowing valid short completions like `x`, `1`, `{}`, `[]`, `()`.
  *
  * @param completion The completion text to validate
  * @returns true if the completion is valid
@@ -382,6 +385,19 @@ export function isValidCompletion(completion: string): boolean {
   const meaningfulChars = trimmed.replace(/[\s\r\n\t]/g, '');
   if (meaningfulChars.length === 0) {
     return false;
+  }
+
+  // Reject very short completions that are likely not useful
+  // Examples: "...", "..", ".", ",", ";", ":", etc.
+  // But allow short valid code like "x", "1", "{}", "[]", etc.
+  if (meaningfulChars.length <= 2) {
+    // Check if it's a common "I don't know" pattern
+    const meaninglessPatterns = [/^\.+$/, /^,$/, /^;+$/, /^:+$/];
+    for (const pattern of meaninglessPatterns) {
+      if (pattern.test(meaningfulChars)) {
+        return false;
+      }
+    }
   }
 
   return true;
