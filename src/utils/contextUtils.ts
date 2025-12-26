@@ -619,11 +619,26 @@ export function smartTruncate(text: string, maxLength: number): string {
 }
 
 /**
+ * Determine if a language is a markup language
+ *
+ * Markup languages use angle brackets for tags and should not
+ * be subject to quote-based string detection which incorrectly
+ * interprets angle brackets as being inside quotes.
+ *
+ * @param languageId The language identifier
+ * @returns true if the language is a markup language
+ */
+function isMarkupLanguage(languageId: string): boolean {
+  const markupLanguages = ['html', 'xml', 'svg', 'markdown', 'yaml'];
+  return markupLanguages.includes(languageId);
+}
+
+/**
  * Determine if completion should be triggered at the given position
  *
  * Implements smart triggering logic to avoid unnecessary API calls:
  * - Don't trigger on empty lines
- * - Don't trigger when inside a string
+ * - Don't trigger when inside a string (except for markup languages)
  * - Don't trigger when inside a comment (basic detection)
  *
  * @param document The VS Code document
@@ -640,6 +655,13 @@ export function shouldTrigger(
   // Don't trigger on empty lines
   if (text.trim().length === 0) {
     return false;
+  }
+
+  // Skip string detection for markup languages (HTML, XML, SVG, etc.)
+  // These languages use angle brackets for tags which can be misinterpreted
+  // as being inside quotes by simple quote detection logic
+  if (isMarkupLanguage(document.languageId)) {
+    return true;
   }
 
   // Don't trigger inside strings (basic check)

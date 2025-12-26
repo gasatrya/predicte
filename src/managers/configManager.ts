@@ -11,7 +11,7 @@
  * - model (string): Codestral model to use (codestral-latest, codestral-22b, codestral-2404)
  * - maxTokens (number): Maximum completion tokens (1-500)
  * - temperature (number): Sampling temperature (0-1)
- * - debounceDelay (number): Delay before triggering autocomplete (ms)
+ * - debounceDelay (number): Delay before triggering autocomplete (ms, default: 150)
  * - contextLines (number): Number of context lines to include (5-100)
  * - enhancedContextEnabled (boolean): Enable enhanced context extraction
  * - enableStreaming (boolean): Use streaming for completions
@@ -124,7 +124,7 @@ export class PredicteConfig {
    * @returns Maximum tokens to generate
    */
   get maxTokens(): number {
-    return this.config.get<number>('maxTokens', 50);
+    return this.config.get<number>('maxTokens', 100);
   }
 
   /**
@@ -140,7 +140,7 @@ export class PredicteConfig {
    * @returns Delay in milliseconds before triggering autocomplete
    */
   get debounceDelay(): number {
-    return this.config.get<number>('debounceDelay', 300);
+    return this.config.get<number>('debounceDelay', 150);
   }
 
   /**
