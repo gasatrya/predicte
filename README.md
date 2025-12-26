@@ -48,7 +48,13 @@ predicte/
 ├── eslint.config.cjs                # ESLint configuration
 ├── .prettierrc                      # Prettier configuration
 ├── AGENTS.md                        # Agent guidelines
-├── RESEARCH-PLAN.md                 # Research documentation
+├── FEATURES-TO-IMPLEMENT.md         # Implementation roadmap
+├── PREDICTE USER TESTING ISSUES & SOLUTIONS.md  # Testing findings
+├── archive/
+│   ├── IMPLEMENTATION-REPORT.md    # Historical implementation report
+│   ├── LANGUAGE-AWARE-PARAMETERS-SUMMARY.md  # Language parameter reference
+│   ├── QUALITY-FILTERING-IMPLEMENTATION.md   # Quality filtering details
+│   └── RESEARCH-PLAN.md             # Original research documentation
 └── README.md                        # This file
 ```
 
