@@ -41,7 +41,7 @@ export function getLanguageParameters(languageId: string): LanguageParameters {
     // Strict/Typed languages - lower temperature for deterministic completions
     typescript: {
       temperature: 0.1,
-      maxTokens: 120,
+      maxTokens: 200,
       stopSequences: ['\n\n', '}', ';', '```'],
     },
     java: {
@@ -93,7 +93,7 @@ export function getLanguageParameters(languageId: string): LanguageParameters {
     // Dynamic languages - slightly higher temperature for variety
     javascript: {
       temperature: 0.15,
-      maxTokens: 100,
+      maxTokens: 150,
       stopSequences: ['\n\n', '}', ';', '```'],
     },
     python: {
@@ -192,6 +192,7 @@ export function getDefaultLanguageParameters(): LanguageParameters {
  *
  * Removes common AI-generated artifacts like:
  * - Markdown code block markers (```)
+ * - FIM (Fill-in-Middle) tokens (<fim_prefix>, <fim_suffix>, <fim_middle>, etc.)
  * - Extra newlines
  * - Trailing/leading whitespace
  * - Common language-specific comment markers
@@ -226,6 +227,12 @@ export function sanitizeCompletion(text: string): string {
       break;
     }
   }
+
+  // Remove FIM (Fill-in-Middle) tokens - these are model artifacts
+  // Handle both standard and pipe-delimited token formats
+  sanitized = sanitized.replace(/<fim_(prefix|suffix|middle)>/gi, '');
+  sanitized = sanitized.replace(/<(PRE|SUF|MID)>/gi, '');
+  sanitized = sanitized.replace(/<\|fim_(prefix|suffix|middle)\|>/gi, '');
 
   // Trim leading/trailing whitespace
   sanitized = sanitized.trim();

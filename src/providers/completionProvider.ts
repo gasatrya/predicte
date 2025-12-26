@@ -79,7 +79,7 @@ export class PredicteCompletionProvider
   async provideInlineCompletionItems(
     document: vscode.TextDocument,
     position: vscode.Position,
-    context: vscode.InlineCompletionContext,
+    _context: vscode.InlineCompletionContext,
     token: vscode.CancellationToken,
   ): Promise<
     | vscode.InlineCompletionItem[]
@@ -94,7 +94,7 @@ export class PredicteCompletionProvider
     }
 
     // Check if should trigger
-    const shouldTriggerResult = this.shouldTrigger(document, position, context);
+    const shouldTriggerResult = this.shouldTrigger(document, position);
     if (!shouldTriggerResult) {
       this.logger.debug('Skipping completion (shouldTrigger returned false)');
       return null;
@@ -312,16 +312,16 @@ export class PredicteCompletionProvider
    * Check if completion should be triggered
    *
    * Implements smart triggering logic to avoid unnecessary API calls.
+   * Note: Due to a VS Code bug, triggerKind is always 'Automatic' even
+   * when manually invoked, so we don't rely on it for logic.
    *
    * @param document The document
    * @param position The cursor position
-   * @param context The inline completion context
    * @returns true if completion should be triggered
    */
   private shouldTrigger(
     document: vscode.TextDocument,
     position: vscode.Position,
-    context: vscode.InlineCompletionContext,
   ): boolean {
     // Check internal trigger logic (strings, empty lines, etc.)
     const internalTrigger = shouldTriggerInternal(document, position);
@@ -329,25 +329,30 @@ export class PredicteCompletionProvider
       return false;
     }
 
-    // Don't trigger if the user is actively typing in a completion
-    // that was just accepted (VS Code's trigger kind will be 'Invoke' in that case)
-    if (context.triggerKind === vscode.InlineCompletionTriggerKind.Invoke) {
-      // Only trigger on explicit invoke if user pressed the shortcut
-      return true;
+    // Get the line text up to cursor
+    const line = document.lineAt(position.line);
+    const text = line.text.substring(0, position.character);
+    const trimmedText = text.trim();
+
+    // Don't trigger on completely empty lines (already handled by shouldTriggerInternal,
+    // but this is an additional safety check)
+    if (trimmedText.length === 0) {
+      return false;
     }
 
-    // For automatic triggering, additional checks
-    if (context.triggerKind === vscode.InlineCompletionTriggerKind.Automatic) {
-      const line = document.lineAt(position.line);
-      const text = line.text.substring(0, position.character);
+    // Get last non-whitespace character
+    const lastChar = trimmedText.slice(-1);
 
-      // Don't trigger if the line ends with common punctuation
-      const lastChar = text.trim().slice(-1);
-      if (['.', ';', ',', '}', ']', ')'].includes(lastChar)) {
-        return false;
-      }
+    // Don't trigger in obviously bad positions
+    // These are typically end of statements or inside strings
+    if ([';', '}', ']', ')', '"', "'", '`'].includes(lastChar)) {
+      return false;
     }
 
+    // Allow triggers in natural coding positions:
+    // After spaces, dot, comma, colon, equals, open brackets/braces
+    // These are often followed by more code
+    // Example: console.|, const x = |, if (|, function foo(|, etc.
     return true;
   }
 

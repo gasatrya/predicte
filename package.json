@@ -102,9 +102,9 @@
         },
         "predicte.debounceDelay": {
           "type": "number",
-          "default": 150,
-          "minimum": 100,
-          "maximum": 2000,
+          "default": 100,
+          "minimum": 50,
+          "maximum": 1000,
           "description": "Delay before triggering autocomplete (ms)",
           "order": 6
         },
