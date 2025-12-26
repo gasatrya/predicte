@@ -86,7 +86,7 @@
         },
         "predicte.maxTokens": {
           "type": "number",
-          "default": 50,
+          "default": 100,
           "minimum": 1,
           "maximum": 500,
           "description": "Maximum completion tokens",
@@ -102,7 +102,7 @@
         },
         "predicte.debounceDelay": {
           "type": "number",
-          "default": 300,
+          "default": 150,
           "minimum": 100,
           "maximum": 2000,
           "description": "Delay before triggering autocomplete (ms)",
