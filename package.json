@@ -110,11 +110,17 @@
         },
         "predicte.contextLines": {
           "type": "number",
-          "default": 20,
+          "default": 50,
           "minimum": 5,
           "maximum": 100,
           "description": "Number of context lines to include",
           "order": 7
+        },
+        "predicte.enhancedContextEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable enhanced context extraction (imports, function/class definitions, type definitions)",
+          "order": 8
         },
         "predicte.enableStreaming": {
           "type": "boolean",
@@ -143,6 +149,32 @@
           "maximum": 120000,
           "description": "Request timeout in milliseconds",
           "order": 11
+        },
+        "predicte.promptEngineeringEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable prompt engineering with language-specific system messages for better completion quality",
+          "order": 12
+        },
+        "predicte.languageAwareParametersEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable language-specific model parameters (temperature, maxTokens, stop sequences) optimized for each programming language",
+          "order": 13
+        },
+        "predicte.qualityFilteringEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable quality filtering and ranking for completion candidates (requests multiple completions and selects the best one)",
+          "order": 14
+        },
+        "predicte.numCandidates": {
+          "type": "number",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 5,
+          "description": "Number of completion candidates to request when quality filtering is enabled (more candidates = better quality but slower)",
+          "order": 15
         }
       }
     },

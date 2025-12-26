@@ -12,7 +12,6 @@ export default [
       '*.mjs',
       '.vscode/**',
     ],
-    noWarnIgnored: false,
   },
 
   // Base JavaScript recommended rules

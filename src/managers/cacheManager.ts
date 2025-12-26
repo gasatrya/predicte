@@ -6,9 +6,9 @@
  */
 
 export interface CacheEntry<T> {
-  value: T
-  timestamp: number
-  ttl: number
+  value: T;
+  timestamp: number;
+  ttl: number;
 }
 
 export class CacheManager<K, V> {
@@ -140,10 +140,10 @@ export class CacheManager<K, V> {
    * @returns Cache statistics object
    */
   getStats(): {
-    size: number
-    maxSize: number
-    keys: number
-    utilization: number
+    size: number;
+    maxSize: number;
+    keys: number;
+    utilization: number;
   } {
     return {
       size: this.cache.size,

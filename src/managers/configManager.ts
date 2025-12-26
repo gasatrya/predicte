@@ -13,9 +13,11 @@
  * - temperature (number): Sampling temperature (0-1)
  * - debounceDelay (number): Delay before triggering autocomplete (ms)
  * - contextLines (number): Number of context lines to include (5-100)
+ * - enhancedContextEnabled (boolean): Enable enhanced context extraction
  * - enableStreaming (boolean): Use streaming for completions
  * - cacheEnabled (boolean): Enable completion caching
  * - cacheTTL (number): Cache TTL in milliseconds (1000-600000)
+ * - languageAwareParametersEnabled (boolean): Enable language-specific model parameters
  */
 
 import * as vscode from 'vscode';
@@ -47,10 +49,15 @@ export interface PredicteConfigValues {
   temperature: number;
   debounceDelay: number;
   contextLines: number;
+  enhancedContextEnabled: boolean;
   enableStreaming: boolean;
   cacheEnabled: boolean;
   cacheTTL: number;
   requestTimeout: number;
+  promptEngineeringEnabled: boolean;
+  languageAwareParametersEnabled: boolean;
+  qualityFilteringEnabled: boolean;
+  numCandidates: number;
   apiKey?: string;
 }
 
@@ -138,7 +145,15 @@ export class PredicteConfig {
    * @returns Number of context lines to include
    */
   get contextLines(): number {
-    return this.config.get<number>('contextLines', 20);
+    return this.config.get<number>('contextLines', 50);
+  }
+
+  /**
+   * Get enhanced context enabled status
+   * @returns true if enhanced context extraction is enabled
+   */
+  get enhancedContextEnabled(): boolean {
+    return this.config.get<boolean>('enhancedContextEnabled', true);
   }
 
   /**
@@ -174,6 +189,38 @@ export class PredicteConfig {
   }
 
   /**
+   * Get prompt engineering enabled status
+   * @returns true if prompt engineering with system messages is enabled
+   */
+  get promptEngineeringEnabled(): boolean {
+    return this.config.get<boolean>('promptEngineeringEnabled', true);
+  }
+
+  /**
+   * Get language-aware parameters enabled status
+   * @returns true if language-specific model parameters are enabled
+   */
+  get languageAwareParametersEnabled(): boolean {
+    return this.config.get<boolean>('languageAwareParametersEnabled', true);
+  }
+
+  /**
+   * Get quality filtering enabled status
+   * @returns true if quality filtering and ranking is enabled
+   */
+  get qualityFilteringEnabled(): boolean {
+    return this.config.get<boolean>('qualityFilteringEnabled', true);
+  }
+
+  /**
+   * Get number of completion candidates
+   * @returns Number of candidates to request (3-5)
+   */
+  get numCandidates(): number {
+    return this.config.get<number>('numCandidates', 3);
+  }
+
+  /**
    * Get all configuration values as an object
    * @returns Complete configuration object
    */
@@ -186,10 +233,15 @@ export class PredicteConfig {
       temperature: this.temperature,
       debounceDelay: this.debounceDelay,
       contextLines: this.contextLines,
+      enhancedContextEnabled: this.enhancedContextEnabled,
       enableStreaming: this.enableStreaming,
       cacheEnabled: this.cacheEnabled,
       cacheTTL: this.cacheTTL,
       requestTimeout: this.requestTimeout,
+      promptEngineeringEnabled: this.promptEngineeringEnabled,
+      languageAwareParametersEnabled: this.languageAwareParametersEnabled,
+      qualityFilteringEnabled: this.qualityFilteringEnabled,
+      numCandidates: this.numCandidates,
       apiKey: this.apiKey,
     };
   }

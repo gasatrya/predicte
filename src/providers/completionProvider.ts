@@ -16,8 +16,14 @@ import {
   extractContext,
   shouldTrigger as shouldTriggerInternal,
   truncateContext,
+  buildEnhancedContext,
+  formatContextWithPrompt,
 } from '../utils/contextUtils';
-import { sanitizeCompletion, isValidCompletion } from '../utils/codeUtils';
+import {
+  sanitizeCompletion,
+  isValidCompletion,
+  getBestCompletion,
+} from '../utils/codeUtils';
 
 /**
  * Predicte Completion Provider
@@ -103,7 +109,9 @@ export class PredicteCompletionProvider
     const shouldTriggerResult = this.shouldTrigger(document, position, context);
     console.warn('[DEBUG] shouldTrigger result:', shouldTriggerResult);
     if (!shouldTriggerResult) {
-      console.warn('[DEBUG] Skipping completion (shouldTrigger returned false)');
+      console.warn(
+        '[DEBUG] Skipping completion (shouldTrigger returned false)',
+      );
       this.logger.debug('Skipping completion (shouldTrigger returned false)');
       return null;
     }
@@ -132,6 +140,7 @@ export class PredicteCompletionProvider
           document,
           position,
           this.config.contextLines,
+          this.config.enhancedContextEnabled,
         );
         console.warn('[DEBUG] Context extracted successfully');
         console.warn('[DEBUG] Prefix length:', codeContext.prefix.length);
@@ -140,16 +149,51 @@ export class PredicteCompletionProvider
           '[DEBUG] Prefix preview (first 100 chars):',
           codeContext.prefix.substring(0, 100),
         );
+        console.warn(
+          '[DEBUG] Enhanced context enabled:',
+          this.config.enhancedContextEnabled,
+        );
+        console.warn(
+          '[DEBUG] Prompt engineering enabled:',
+          this.config.promptEngineeringEnabled,
+        );
+
+        // Format context with system prompt if prompt engineering is enabled
+        const formattedContext = formatContextWithPrompt(
+          codeContext,
+          this.config.promptEngineeringEnabled,
+        );
 
         // Truncate context if needed
-        const prefix = truncateContext(codeContext.prefix);
-        const suffix = truncateContext(codeContext.suffix);
+        let prefix: string;
+        let suffix: string;
+        let systemPrompt: string | undefined;
+
+        if (this.config.enhancedContextEnabled) {
+          // Use enhanced context building
+          const enhancedContext = buildEnhancedContext(codeContext);
+          prefix = truncateContext(enhancedContext.prefix);
+          suffix = truncateContext(enhancedContext.suffix);
+        } else {
+          // Use basic context
+          prefix = truncateContext(formattedContext.prefix);
+          suffix = truncateContext(formattedContext.suffix);
+        }
+
+        // Set system prompt if prompt engineering is enabled
+        if (this.config.promptEngineeringEnabled) {
+          systemPrompt = formattedContext.systemPrompt;
+        }
 
         console.warn(
           '[DEBUG] After truncation - Prefix length:',
           prefix.length,
           'Suffix length:',
           suffix.length,
+        );
+        console.warn(
+          '[DEBUG] System prompt length:',
+          systemPrompt?.length ?? 0,
         );
 
         this.logger.debug(
@@ -163,19 +207,79 @@ export class PredicteCompletionProvider
           '[DEBUG] Checking if streaming is enabled:',
           this.config.enableStreaming,
         );
+        console.warn(
+          '[DEBUG] Quality filtering enabled:',
+          this.config.qualityFilteringEnabled,
+        );
 
         // Get completion from Mistral API
         let result: string | null = null;
         console.warn('[DEBUG] About to make API call to Mistral...');
 
-        if (this.config.enableStreaming) {
-          // Use streaming completion
-          console.warn('[DEBUG] Using streaming completion');
-          result = await this.getStreamingCompletion(prefix, suffix, token);
+        // Quality filtering doesn't work well with streaming
+        // Fall back to single completion if streaming is enabled
+        if (
+          this.config.enableStreaming ||
+          !this.config.qualityFilteringEnabled
+        ) {
+          // Use single completion (streaming or non-streaming)
+          if (this.config.enableStreaming) {
+            console.warn('[DEBUG] Using streaming completion');
+            result = await this.getStreamingCompletion(
+              prefix,
+              suffix,
+              token,
+              systemPrompt,
+              document.languageId,
+            );
+          } else {
+            console.warn('[DEBUG] Using non-streaming completion');
+            result = await this.mistralClient.getCompletion(
+              prefix,
+              suffix,
+              token,
+              systemPrompt,
+              document.languageId,
+            );
+          }
         } else {
-          // Use non-streaming completion
-          console.warn('[DEBUG] Using non-streaming completion');
-          result = await this.mistralClient.getCompletion(prefix, suffix, token);
+          // Use quality filtering with multiple candidates
+          console.warn(
+            '[DEBUG] Using quality filtering with multiple candidates',
+          );
+          const numCandidates = this.config.numCandidates;
+          console.warn('[DEBUG] Requesting', numCandidates, 'candidates');
+
+          const candidates = await this.mistralClient.getMultipleCompletions(
+            prefix,
+            suffix,
+            numCandidates,
+            token,
+            systemPrompt,
+            document.languageId,
+          );
+
+          // Filter out null candidates
+          const validCandidates = candidates.filter(
+            (c): c is string => c !== null,
+          );
+          console.warn('[DEBUG] Valid candidates:', validCandidates.length);
+
+          if (validCandidates.length > 0) {
+            // Select the best completion using quality filtering
+            result = getBestCompletion(
+              validCandidates,
+              prefix,
+              suffix,
+              document.languageId,
+            );
+            console.warn(
+              '[DEBUG] Best completion selected:',
+              result ? 'success' : 'null',
+            );
+          } else {
+            console.warn('[DEBUG] No valid candidates found');
+          }
         }
 
         console.warn(
@@ -254,12 +358,16 @@ export class PredicteCompletionProvider
    * @param prefix The prefix text before the cursor
    * @param suffix The suffix text after the cursor
    * @param token Cancellation token to abort the request
+   * @param systemPrompt Optional system prompt for prompt engineering
+   * @param languageId The language identifier for language-aware parameters (optional)
    * @returns Promise resolving to the complete completion text
    */
   private async getStreamingCompletion(
     prefix: string,
     suffix: string,
     token: vscode.CancellationToken,
+    systemPrompt?: string,
+    languageId?: string,
   ): Promise<string | null> {
     console.warn('[DEBUG] getStreamingCompletion called');
     const chunks: string[] = [];
@@ -271,6 +379,8 @@ export class PredicteCompletionProvider
         prefix,
         suffix,
         token,
+        systemPrompt,
+        languageId,
       )) {
         if (token.isCancellationRequested) {
           console.warn('[DEBUG] Streaming request cancelled');
@@ -339,7 +449,9 @@ export class PredicteCompletionProvider
 
     // For automatic triggering, additional checks
     if (context.triggerKind === vscode.InlineCompletionTriggerKind.Automatic) {
-      console.warn('[DEBUG] Trigger kind is Automatic, doing additional checks');
+      console.warn(
+        '[DEBUG] Trigger kind is Automatic, doing additional checks',
+      );
       const line = document.lineAt(position.line);
       const text = line.text.substring(0, position.character);
       console.warn('[DEBUG] Text before cursor:', JSON.stringify(text));
@@ -475,10 +587,10 @@ export class PredicteCompletionProvider
    */
   getCacheStats():
     | {
-        size: number
-        maxSize: number
-        keys: number
-        utilization: number
+        size: number;
+        maxSize: number;
+        keys: number;
+        utilization: number;
       }
     | undefined {
     return this.mistralClient.getCacheStats();

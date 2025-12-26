@@ -62,6 +62,7 @@ import type { PredicteSecretStorage } from './secretStorage';
 import { CacheManager } from '../managers/cacheManager';
 import { logger } from '../utils/logger';
 import * as crypto from 'node:crypto';
+import { getLanguageParameters } from '../utils/codeUtils';
 
 /**
  * Error types for Mistral client operations
@@ -102,7 +103,9 @@ export class MistralClient {
    */
   private createMistralClient(apiKey: string): Mistral {
     const serverURL = this.config.apiBaseUrl;
-    console.warn(`[DEBUG] Creating Mistral client with serverURL: ${serverURL}`);
+    console.warn(
+      `[DEBUG] Creating Mistral client with serverURL: ${serverURL}`,
+    );
     console.warn(
       `[DEBUG] serverURL ends with /v1: ${serverURL.endsWith('/v1')}`,
     );
@@ -204,13 +207,19 @@ export class MistralClient {
    * - model
    * - maxTokens
    * - temperature
+   * - language ID (when language-aware parameters are enabled)
    *
    * @param prefix The prefix text
    * @param suffix The suffix text (optional)
+   * @param languageId The language identifier (optional)
    * @returns MD5 hash string
    */
-  private generateCacheKey(prefix: string, suffix?: string): string {
-    const keyString = `${prefix}:${suffix ?? ''}:${this.config.model}:${this.config.maxTokens}:${this.config.temperature}`;
+  private generateCacheKey(
+    prefix: string,
+    suffix?: string,
+    languageId?: string,
+  ): string {
+    const keyString = `${prefix}:${suffix ?? ''}:${this.config.model}:${this.config.maxTokens}:${this.config.temperature}:${languageId ?? 'default'}`;
     return crypto.createHash('md5').update(keyString).digest('hex');
   }
 
@@ -218,12 +227,53 @@ export class MistralClient {
    * Get stop sequences for completion generation
    *
    * These sequences prevent overly long completions by stopping when
-   * common code block delimiters are encountered.
+   * common code block delimiters are encountered. Uses language-aware
+   * sequences when language-aware parameters are enabled.
    *
+   * @param languageId The language identifier (optional)
    * @returns Array of stop sequences
    */
-  private getStopSequences(): string[] {
+  private getStopSequences(languageId?: string): string[] {
+    if (languageId && this.config.languageAwareParametersEnabled) {
+      const params = getLanguageParameters(languageId);
+      return params.stopSequences;
+    }
+    // Default stop sequences for backward compatibility
     return ['\n\n', '```', '"""', "'''"];
+  }
+
+  /**
+   * Get language-aware temperature value
+   *
+   * Returns language-specific temperature when language-aware parameters
+   * are enabled, otherwise returns the configured temperature.
+   *
+   * @param languageId The language identifier (optional)
+   * @returns Temperature value
+   */
+  private getTemperature(languageId?: string): number {
+    if (languageId && this.config.languageAwareParametersEnabled) {
+      const params = getLanguageParameters(languageId);
+      return params.temperature;
+    }
+    return this.config.temperature;
+  }
+
+  /**
+   * Get language-aware maxTokens value
+   *
+   * Returns language-specific maxTokens when language-aware parameters
+   * are enabled, otherwise returns the configured maxTokens.
+   *
+   * @param languageId The language identifier (optional)
+   * @returns MaxTokens value
+   */
+  private getMaxTokens(languageId?: string): number {
+    if (languageId && this.config.languageAwareParametersEnabled) {
+      const params = getLanguageParameters(languageId);
+      return params.maxTokens;
+    }
+    return this.config.maxTokens;
   }
 
   /**
@@ -267,6 +317,9 @@ export class MistralClient {
    * @param prefix The prefix text before the cursor
    * @param suffix The suffix text after the cursor (optional)
    * @param token Optional cancellation token to abort the request
+   * @param systemPrompt Optional system prompt for prompt engineering
+   * @param languageId The language identifier for language-aware parameters (optional)
+   * @param temperature Optional temperature override (for multiple candidates)
    * @returns Promise resolving to the completion text, or null if no completion
    * @throws MistralClientError if the request fails
    */
@@ -274,6 +327,9 @@ export class MistralClient {
     prefix: string,
     suffix?: string,
     token?: vscode.CancellationToken,
+    systemPrompt?: string,
+    languageId?: string,
+    temperature?: number,
   ): Promise<string | null> {
     console.warn('[DEBUG] MistralClient.getCompletion called');
     // Check for cancellation
@@ -282,10 +338,16 @@ export class MistralClient {
       throw new MistralClientError('Request cancelled', 'CANCELLED');
     }
 
+    // Get language-aware parameters
+    const languageTemperature = this.getTemperature(languageId);
+    const effectiveTemperature = temperature ?? languageTemperature;
+    const maxTokens = this.getMaxTokens(languageId);
+    const stopSequences = this.getStopSequences(languageId);
+
     // Check cache first if enabled
     if (this.config.cacheEnabled) {
       console.warn('[DEBUG] Cache enabled, checking for cached result...');
-      const cacheKey = this.generateCacheKey(prefix, suffix);
+      const cacheKey = this.generateCacheKey(prefix, suffix, languageId);
       const cached = this.cache.get(cacheKey);
       if (cached !== undefined) {
         console.warn('[DEBUG] Returning cached result');
@@ -304,19 +366,31 @@ export class MistralClient {
     }
 
     console.warn('[DEBUG] Model:', this.config.model);
-    console.warn('[DEBUG] Max tokens:', this.config.maxTokens);
-    console.warn('[DEBUG] Temperature:', this.config.temperature);
+    console.warn('[DEBUG] Max tokens:', maxTokens);
+    console.warn('[DEBUG] Temperature:', effectiveTemperature);
+    console.warn('[DEBUG] Language ID:', languageId ?? 'default');
+    console.warn(
+      '[DEBUG] Language-aware parameters enabled:',
+      this.config.languageAwareParametersEnabled,
+    );
+    console.warn('[DEBUG] System prompt length:', systemPrompt?.length ?? 0);
 
     const request: FIMCompletionRequest = {
       model: this.config.model,
       prompt: prefix,
       suffix: suffix ?? null,
-      maxTokens: this.config.maxTokens,
-      temperature: this.config.temperature,
+      maxTokens,
+      temperature: effectiveTemperature,
       topP: 1,
-      stop: this.getStopSequences(),
+      stop: stopSequences,
       stream: false,
     };
+
+    // Add system prompt if provided (for prompt engineering)
+    if (systemPrompt && systemPrompt.length > 0) {
+      // Prepend system prompt to the prefix
+      request.prompt = `${systemPrompt}\n\n${prefix}`;
+    }
 
     console.warn('[DEBUG] About to call client.fim.complete...');
     console.warn('[DEBUG] Request model:', request.model);
@@ -325,7 +399,8 @@ export class MistralClient {
     console.warn('[DEBUG] Request maxTokens:', request.maxTokens);
     console.warn('[DEBUG] Request stream:', request.stream);
     try {
-      const response: FIMCompletionResponse = await client.fim.complete(request);
+      const response: FIMCompletionResponse =
+        await client.fim.complete(request);
       console.warn('[DEBUG] Received response from Mistral API');
       console.warn('[DEBUG] Response status: success');
       const content = this.extractContent(
@@ -339,7 +414,7 @@ export class MistralClient {
       // Cache the result if enabled and we got a result
       if (this.config.cacheEnabled && result !== null) {
         console.warn('[DEBUG] Caching result...');
-        const cacheKey = this.generateCacheKey(prefix, suffix);
+        const cacheKey = this.generateCacheKey(prefix, suffix, languageId);
         this.cache.set(cacheKey, result, this.config.cacheTTL);
       }
 
@@ -385,6 +460,101 @@ export class MistralClient {
   }
 
   /**
+   * Get multiple completion candidates with slight temperature variations
+   *
+   * Requests multiple completions from the API with different temperatures
+   * to generate diverse candidates for quality filtering and ranking.
+   *
+   * @param prefix The prefix text before the cursor
+   * @param suffix The suffix text after the cursor (optional)
+   * @param numCandidates Number of candidates to generate (1-5)
+   * @param token Optional cancellation token to abort the requests
+   * @param systemPrompt Optional system prompt for prompt engineering
+   * @param languageId The language identifier for language-aware parameters (optional)
+   * @returns Promise resolving to array of completion texts (may contain nulls)
+   * @throws MistralClientError if all requests fail
+   */
+  async getMultipleCompletions(
+    prefix: string,
+    suffix?: string,
+    numCandidates: number = 3,
+    token?: vscode.CancellationToken,
+    systemPrompt?: string,
+    languageId?: string,
+  ): Promise<(string | null)[]> {
+    console.warn(
+      '[DEBUG] getMultipleCompletions called, numCandidates:',
+      numCandidates,
+    );
+
+    // Validate numCandidates
+    if (numCandidates < 1 || numCandidates > 5) {
+      console.warn('[DEBUG] Invalid numCandidates, using default of 3');
+      numCandidates = 3;
+    }
+
+    // Get base temperature
+    const baseTemperature = this.getTemperature(languageId);
+    console.warn('[DEBUG] Base temperature:', baseTemperature);
+
+    // Create temperature variations for diversity
+    const temperatureVariations: number[] = [];
+    for (let i = 0; i < numCandidates; i++) {
+      // Create slight variations around the base temperature
+      // Range: base - 0.05 to base + 0.05, with minimum 0.01
+      const variation = (i - (numCandidates - 1) / 2) * 0.05;
+      const temp = Math.max(0.01, Math.min(1.0, baseTemperature + variation));
+      temperatureVariations.push(temp);
+    }
+
+    console.warn('[DEBUG] Temperature variations:', temperatureVariations);
+
+    // Request completions in parallel
+    const promises = temperatureVariations.map(async (temp, index) => {
+      console.warn(
+        `[DEBUG] Requesting candidate ${index + 1}/${numCandidates} with temperature ${temp}`,
+      );
+
+      try {
+        const completion = await this.getCompletion(
+          prefix,
+          suffix,
+          token,
+          systemPrompt,
+          languageId,
+          temp,
+        );
+        console.warn(
+          `[DEBUG] Candidate ${index + 1}/${numCandidates} received:`,
+          completion ? 'success' : 'null',
+        );
+        return completion;
+      } catch (error) {
+        console.warn(
+          `[DEBUG] Candidate ${index + 1}/${numCandidates} failed:`,
+          error,
+        );
+        // Return null for failed requests, allowing others to succeed
+        return null;
+      }
+    });
+
+    const results = await Promise.all(promises);
+    console.warn('[DEBUG] All candidates received');
+
+    // Count successful completions
+    const successfulCount = results.filter((r) => r !== null).length;
+    console.warn(
+      '[DEBUG] Successful completions:',
+      successfulCount,
+      '/',
+      numCandidates,
+    );
+
+    return results;
+  }
+
+  /**
    * Get a streaming FIM completion from Mistral's Codestral API
    *
    * Yields each chunk of the completion as it arrives from the API.
@@ -393,6 +563,8 @@ export class MistralClient {
    * @param prefix The prefix text before the cursor
    * @param suffix The suffix text after the cursor (optional)
    * @param token Optional cancellation token to abort the request
+   * @param systemPrompt Optional system prompt for prompt engineering
+   * @param languageId The language identifier for language-aware parameters (optional)
    * @returns Async generator yielding completion text chunks
    * @throws MistralClientError if the request fails
    */
@@ -400,6 +572,8 @@ export class MistralClient {
     prefix: string,
     suffix?: string,
     token?: vscode.CancellationToken,
+    systemPrompt?: string,
+    languageId?: string,
   ): AsyncGenerator<string, void, unknown> {
     console.warn('[DEBUG] MistralClient.getStreamingCompletion called');
     // Check for cancellation
@@ -417,20 +591,37 @@ export class MistralClient {
       throw new MistralClientError('Request cancelled', 'CANCELLED');
     }
 
+    // Get language-aware parameters
+    const temperature = this.getTemperature(languageId);
+    const maxTokens = this.getMaxTokens(languageId);
+    const stopSequences = this.getStopSequences(languageId);
+
     console.warn('[DEBUG] Model:', this.config.model);
-    console.warn('[DEBUG] Max tokens:', this.config.maxTokens);
-    console.warn('[DEBUG] Temperature:', this.config.temperature);
+    console.warn('[DEBUG] Max tokens:', maxTokens);
+    console.warn('[DEBUG] Temperature:', temperature);
+    console.warn('[DEBUG] Language ID:', languageId ?? 'default');
+    console.warn(
+      '[DEBUG] Language-aware parameters enabled:',
+      this.config.languageAwareParametersEnabled,
+    );
+    console.warn('[DEBUG] System prompt length:', systemPrompt?.length ?? 0);
 
     const request: FIMCompletionStreamRequest = {
       model: this.config.model,
       prompt: prefix,
       suffix: suffix ?? null,
-      maxTokens: this.config.maxTokens,
-      temperature: this.config.temperature,
+      maxTokens,
+      temperature,
       topP: 1,
-      stop: this.getStopSequences(),
+      stop: stopSequences,
       stream: true,
     };
+
+    // Add system prompt if provided (for prompt engineering)
+    if (systemPrompt && systemPrompt.length > 0) {
+      // Prepend system prompt to the prefix
+      request.prompt = `${systemPrompt}\n\n${prefix}`;
+    }
 
     console.warn('[DEBUG] About to call client.fim.stream...');
     console.warn('[DEBUG] Request model:', request.model);
@@ -701,10 +892,10 @@ export class MistralClient {
    */
   getCacheStats():
     | {
-        size: number
-        maxSize: number
-        keys: number
-        utilization: number
+        size: number;
+        maxSize: number;
+        keys: number;
+        utilization: number;
       }
     | undefined {
     if (!this.config.cacheEnabled) {
