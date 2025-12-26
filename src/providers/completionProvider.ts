@@ -21,6 +21,7 @@ import {
 } from '../utils/contextUtils';
 import {
   sanitizeCompletion,
+  fixHtmlJsxSpacing,
   isValidCompletion,
   getBestCompletion,
 } from '../utils/codeUtils';
@@ -228,6 +229,12 @@ export class PredicteCompletionProvider
           );
         }
 
+        // Fix HTML/JSX spacing issues
+        if (result) {
+          const sanitized = sanitizeCompletion(result);
+          result = fixHtmlJsxSpacing(sanitized, prefix);
+        }
+
         return result;
       });
 
@@ -236,27 +243,24 @@ export class PredicteCompletionProvider
         return null;
       }
 
-      // Sanitize completion
-      const sanitized = sanitizeCompletion(completion);
-
       // Validate completion
-      if (!isValidCompletion(sanitized)) {
+      if (!isValidCompletion(completion)) {
         this.logger.debug('Completion invalid after sanitization');
         return null;
       }
 
       // Create inline completion item with explicit range
       const item = new vscode.InlineCompletionItem(
-        sanitized,
+        completion,
         new vscode.Range(position, position),
       );
 
       // Enable bracket pair completion for function signatures and code blocks
       // Note: completeBracketPairs is a proposed API, using type assertion
       if (
-        sanitized.startsWith('(') ||
-        sanitized.startsWith('{') ||
-        sanitized.startsWith('[')
+        completion.startsWith('(') ||
+        completion.startsWith('{') ||
+        completion.startsWith('[')
       ) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (item as any).completeBracketPairs = true;

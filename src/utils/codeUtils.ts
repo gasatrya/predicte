@@ -244,6 +244,54 @@ export function sanitizeCompletion(text: string): string {
 }
 
 /**
+ * Fix HTML/JSX spacing issues in completions
+ *
+ * Ensures proper spacing between tag names and attributes.
+ * Example: Converts "to='/'>" to " to='/>" (adds missing space)
+ *
+ * @param completion The completion text
+ * @param prefix The prefix context before the cursor
+ * @returns Fixed completion text
+ */
+export function fixHtmlJsxSpacing(completion: string, prefix: string): string {
+  // Only process if we have both completion and prefix
+  if (!completion || !prefix) {
+    return completion;
+  }
+
+  const trimmedPrefix = prefix.trim();
+
+  // Check if prefix ends with a tag name (like "<Link", "<div", etc.)
+  const tagMatch = trimmedPrefix.match(/<([a-zA-Z][a-zA-Z0-9_-]*)$/);
+  if (!tagMatch) {
+    return completion;
+  }
+
+  // Check if completion starts with an attribute (common patterns)
+  const attributePatterns = [
+    /^[a-zA-Z][a-zA-Z0-9_-]*=/, // Standard attributes: to=, href=, className=
+    /^[a-zA-Z][a-zA-Z0-9_-]*\s/, // Attributes with space: to (not followed by = yet)
+    /^\{/, // JSX expressions: {variable}
+    /^\./, // Class names: .className
+    /^#/, // IDs: #id
+  ];
+
+  const startsWithAttribute = attributePatterns.some((pattern) =>
+    pattern.test(completion),
+  );
+
+  if (startsWithAttribute) {
+    // Check if first character of completion is already a space
+    if (completion[0] !== ' ') {
+      // Add a space to make it valid: "<Link to=" instead of "<Linkto="
+      return ' ' + completion;
+    }
+  }
+
+  return completion;
+}
+
+/**
  * Get language-specific stop sequences for completion generation
  *
  * Returns sequences that should stop completion generation to prevent
