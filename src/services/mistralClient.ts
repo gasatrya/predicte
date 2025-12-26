@@ -354,6 +354,33 @@ export class MistralClient {
       request.prompt = `${systemPrompt}\n\n${prefix}`;
     }
 
+    // Log the request details (excluding full prefix/suffix to avoid huge logs)
+    this.logger.debug(
+      `Making FIM completion request: ${JSON.stringify({
+        model: request.model,
+        promptLength: request.prompt?.length ?? 0,
+        suffixLength: request.suffix?.length ?? 0,
+        maxTokens: request.maxTokens,
+        temperature: request.temperature,
+        topP: request.topP,
+        stopSequences: request.stop,
+        hasSystemPrompt: systemPrompt && systemPrompt.length > 0,
+        systemPromptLength: systemPrompt?.length ?? 0,
+      })}`,
+    );
+
+    // Log truncated prompt and suffix for debugging
+    if (request.prompt) {
+      this.logger.debug(
+        `Prompt (first 500 chars): ${request.prompt.substring(0, 500)}${request.prompt.length > 500 ? '...' : ''}`,
+      );
+    }
+    if (request.suffix) {
+      this.logger.debug(
+        `Suffix (first 500 chars): ${request.suffix.substring(0, 500)}${request.suffix.length > 500 ? '...' : ''}`,
+      );
+    }
+
     try {
       const response: FIMCompletionResponse =
         await client.fim.complete(request);
@@ -441,6 +468,34 @@ export class MistralClient {
       temperatureVariations.push(temp);
     }
 
+    // Log the request details for multiple completions
+    this.logger.debug(
+      `Making FIM multiple completions request: ${JSON.stringify({
+        model: this.config.model,
+        promptLength: prefix?.length ?? 0,
+        suffixLength: suffix?.length ?? 0,
+        maxTokens: this.getMaxTokens(languageId),
+        baseTemperature,
+        temperatureVariations,
+        numCandidates,
+        stopSequences: this.getStopSequences(languageId),
+        hasSystemPrompt: systemPrompt && systemPrompt.length > 0,
+        systemPromptLength: systemPrompt?.length ?? 0,
+      })}`,
+    );
+
+    // Log truncated prompt and suffix for debugging
+    if (prefix) {
+      this.logger.debug(
+        `Multiple completions prompt (first 500 chars): ${prefix.substring(0, 500)}${prefix.length > 500 ? '...' : ''}`,
+      );
+    }
+    if (suffix) {
+      this.logger.debug(
+        `Multiple completions suffix (first 500 chars): ${suffix.substring(0, 500)}${suffix.length > 500 ? '...' : ''}`,
+      );
+    }
+
     // Request completions in parallel
     const promises = temperatureVariations.map(async (temp) => {
       try {
@@ -517,6 +572,34 @@ export class MistralClient {
     if (systemPrompt && systemPrompt.length > 0) {
       // Prepend system prompt to the prefix
       request.prompt = `${systemPrompt}\n\n${prefix}`;
+    }
+
+    // Log the request details for streaming
+    this.logger.debug(
+      `Making FIM streaming request: ${JSON.stringify({
+        model: request.model,
+        promptLength: request.prompt?.length ?? 0,
+        suffixLength: request.suffix?.length ?? 0,
+        maxTokens: request.maxTokens,
+        temperature: request.temperature,
+        topP: request.topP,
+        stopSequences: request.stop,
+        stream: request.stream,
+        hasSystemPrompt: systemPrompt && systemPrompt.length > 0,
+        systemPromptLength: systemPrompt?.length ?? 0,
+      })}`,
+    );
+
+    // Log truncated prompt and suffix for debugging
+    if (request.prompt) {
+      this.logger.debug(
+        `Streaming prompt (first 500 chars): ${request.prompt.substring(0, 500)}${request.prompt.length > 500 ? '...' : ''}`,
+      );
+    }
+    if (request.suffix) {
+      this.logger.debug(
+        `Streaming suffix (first 500 chars): ${request.suffix.substring(0, 500)}${request.suffix.length > 500 ? '...' : ''}`,
+      );
     }
 
     try {

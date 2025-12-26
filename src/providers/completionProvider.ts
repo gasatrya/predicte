@@ -123,10 +123,32 @@ export class PredicteCompletionProvider
           this.config.enhancedContextEnabled,
         );
 
+        this.logger.debug(
+          `Extracted context: ${JSON.stringify({
+            prefix:
+              codeContext.prefix.substring(0, 200) +
+              (codeContext.prefix.length > 200 ? '...' : ''),
+            suffix:
+              codeContext.suffix.substring(0, 200) +
+              (codeContext.suffix.length > 200 ? '...' : ''),
+            cursorLine: codeContext.cursorLine,
+            languageId: document.languageId,
+          })}`,
+        );
+
         // Format context with system prompt if prompt engineering is enabled
         const formattedContext = formatContextWithPrompt(
           codeContext,
           this.config.promptEngineeringEnabled,
+        );
+
+        this.logger.debug(
+          `Formatted context: ${JSON.stringify({
+            hasSystemPrompt: !!formattedContext.systemPrompt,
+            systemPromptLength: formattedContext.systemPrompt?.length || 0,
+            prefixLength: formattedContext.prefix.length,
+            suffixLength: formattedContext.suffix.length,
+          })}`,
         );
 
         // Truncate context if needed
@@ -136,6 +158,7 @@ export class PredicteCompletionProvider
 
         if (this.config.enhancedContextEnabled) {
           // Use enhanced context building
+          this.logger.debug('Using enhanced context building');
           const enhancedContext = buildEnhancedContext(codeContext);
           prefix = truncateContext(enhancedContext.prefix);
           suffix = truncateContext(enhancedContext.suffix);
@@ -155,6 +178,13 @@ export class PredicteCompletionProvider
         );
         this.logger.debug(
           `Prefix length: ${prefix.length}, Suffix length: ${suffix.length}`,
+        );
+        // Add actual content logging (truncated for readability)
+        this.logger.debug(
+          `Prefix (first 300 chars): ${prefix.substring(0, 300)}${prefix.length > 300 ? '...' : ''}`,
+        );
+        this.logger.debug(
+          `Suffix (first 300 chars): ${suffix.substring(0, 300)}${suffix.length > 300 ? '...' : ''}`,
         );
 
         // Get completion from Mistral API
