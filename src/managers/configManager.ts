@@ -11,7 +11,7 @@
  * - model (string): Codestral model to use (codestral-latest, codestral-22b, codestral-2404)
  * - maxTokens (number): Maximum completion tokens (1-500)
  * - temperature (number): Sampling temperature (0-1)
- * - debounceDelay (number): Delay before triggering autocomplete (ms, default: 100)
+ * - debounceDelay (number): Delay before triggering autocomplete (ms, default: 150 based on Zed's Codestral timing research)
  * - contextLines (number): Number of context lines to include (5-100)
  * - enhancedContextEnabled (boolean): Enable enhanced context extraction
  * - enableStreaming (boolean): Use streaming for completions
@@ -19,6 +19,7 @@
  * - cacheTTL (number): Cache TTL in milliseconds (1000-600000)
  * - languageAwareParametersEnabled (boolean): Enable language-specific model parameters
  * - debugMode (boolean): Enable debug logging for troubleshooting
+ * - enableKeybindings (boolean): Enable keyboard shortcuts for multi-granularity completion acceptance
  */
 
 import * as vscode from 'vscode';
@@ -61,6 +62,23 @@ export interface PredicteConfigValues {
   qualityFilteringEnabled: boolean;
   numCandidates: number;
   debugMode: boolean;
+  enableKeybindings: boolean;
+
+  // New: Performance monitoring
+  enablePerformanceMonitoring: boolean;
+
+  // New: Status bar
+  enableStatusBar: boolean;
+
+  // New: Conflict resolution
+  enableConflictResolution: boolean;
+  hideWhenLSPActive: boolean;
+  modifierKeyForPreview: 'alt' | 'ctrl' | 'none';
+
+  // New: Continuation detection
+  enableContinuationDetection: boolean;
+  continuationDelay: number;
+
   apiKey?: string;
 }
 
@@ -140,7 +158,7 @@ export class PredicteConfig {
    * @returns Delay in milliseconds before triggering autocomplete
    */
   get debounceDelay(): number {
-    return this.config.get<number>('debounceDelay', 100);
+    return this.config.get<number>('debounceDelay', 150);
   }
 
   /**
@@ -232,6 +250,73 @@ export class PredicteConfig {
   }
 
   /**
+   * Get keybindings enabled status
+   * @returns true if keybindings are enabled
+   */
+  get enableKeybindings(): boolean {
+    return this.config.get<boolean>('enableKeybindings', true);
+  }
+
+  /**
+   * Get performance monitoring enabled status
+   * @returns true if performance monitoring is enabled
+   */
+  get enablePerformanceMonitoring(): boolean {
+    return this.config.get<boolean>('enablePerformanceMonitoring', true);
+  }
+
+  /**
+   * Get status bar enabled status
+   * @returns true if status bar is enabled
+   */
+  get enableStatusBar(): boolean {
+    return this.config.get<boolean>('enableStatusBar', true);
+  }
+
+  /**
+   * Get conflict resolution enabled status
+   * @returns true if conflict resolution is enabled
+   */
+  get enableConflictResolution(): boolean {
+    return this.config.get<boolean>('enableConflictResolution', true);
+  }
+
+  /**
+   * Get hide when LSP active setting
+   * @returns true if AI completions should hide when LSP menu is visible
+   */
+  get hideWhenLSPActive(): boolean {
+    return this.config.get<boolean>('hideWhenLSPActive', true);
+  }
+
+  /**
+   * Get modifier key for preview setting
+   * @returns Modifier key to preview AI completions when LSP menu is visible
+   */
+  get modifierKeyForPreview(): 'alt' | 'ctrl' | 'none' {
+    return this.config.get<'alt' | 'ctrl' | 'none'>(
+      'modifierKeyForPreview',
+      'alt',
+    );
+  }
+
+  /**
+   * Get continuation detection enabled status
+   * @returns true if continuation detection is enabled
+   */
+  get enableContinuationDetection(): boolean {
+    return this.config.get<boolean>('enableContinuationDetection', true);
+  }
+
+  /**
+   * Get continuation delay
+   * @returns Delay in milliseconds before triggering continuation detection
+   */
+  get continuationDelay(): number {
+    return this.config.get<number>('continuationDelay', 100);
+  }
+
+  /**
    * Get all configuration values as an object
    * @returns Complete configuration object
    */
@@ -254,6 +339,14 @@ export class PredicteConfig {
       qualityFilteringEnabled: this.qualityFilteringEnabled,
       numCandidates: this.numCandidates,
       debugMode: this.debugMode,
+      enableKeybindings: this.enableKeybindings,
+      enablePerformanceMonitoring: this.enablePerformanceMonitoring,
+      enableStatusBar: this.enableStatusBar,
+      enableConflictResolution: this.enableConflictResolution,
+      hideWhenLSPActive: this.hideWhenLSPActive,
+      modifierKeyForPreview: this.modifierKeyForPreview,
+      enableContinuationDetection: this.enableContinuationDetection,
+      continuationDelay: this.continuationDelay,
       apiKey: this.apiKey,
     };
   }

@@ -61,6 +61,7 @@ import type { PredicteConfig } from '../managers/configManager';
 import type { PredicteSecretStorage } from './secretStorage';
 import { CacheManager } from '../managers/cacheManager';
 import type { Logger } from '../utils/logger';
+import type { PerformanceMonitor } from '../managers/performanceMetrics';
 import * as crypto from 'node:crypto';
 import { getLanguageParameters } from '../utils/codeUtils';
 
@@ -89,15 +90,18 @@ export class MistralClient {
   private secretStorage: PredicteSecretStorage;
   private cache: CacheManager<string, string>;
   private logger: Logger;
+  private performanceMonitor?: PerformanceMonitor;
 
   constructor(
     config: PredicteConfig,
     secretStorage: PredicteSecretStorage,
     logger: Logger,
+    performanceMonitor?: PerformanceMonitor,
   ) {
     this.config = config;
     this.secretStorage = secretStorage;
     this.logger = logger;
+    this.performanceMonitor = performanceMonitor;
     this.cache = new CacheManager(100, config.cacheTTL);
   }
 
@@ -310,6 +314,8 @@ export class MistralClient {
     languageId?: string,
     temperature?: number,
   ): Promise<string | null> {
+    const startTime = Date.now();
+
     // Check for cancellation
     if (token?.isCancellationRequested) {
       throw new MistralClientError('Request cancelled', 'CANCELLED');
@@ -326,8 +332,15 @@ export class MistralClient {
       const cacheKey = this.generateCacheKey(prefix, suffix, languageId);
       const cached = this.cache.get(cacheKey);
       if (cached !== undefined) {
+        // Record cache hit
+        this.performanceMonitor?.recordCacheHit();
+        const latency = Date.now() - startTime;
+        this.performanceMonitor?.recordLatency(latency, false);
+        this.performanceMonitor?.recordSuccess();
         return cached;
       }
+      // Record cache miss
+      this.performanceMonitor?.recordCacheMiss();
     }
 
     const client = await this.getClient();
@@ -395,8 +408,20 @@ export class MistralClient {
         this.cache.set(cacheKey, result, this.config.cacheTTL);
       }
 
+      // Record success metrics
+      const latency = Date.now() - startTime;
+      this.performanceMonitor?.recordLatency(latency, false);
+      this.performanceMonitor?.recordSuccess();
+
       return result;
     } catch (error) {
+      // Record failure metrics
+      const latency = Date.now() - startTime;
+      this.performanceMonitor?.recordLatency(latency, false);
+
+      const errorType = this.getErrorType(error);
+      this.performanceMonitor?.recordFailure(errorType);
+
       // Special handling for "no Route matched with those values" error
       if (
         error instanceof Error &&
@@ -540,6 +565,8 @@ export class MistralClient {
     systemPrompt?: string,
     languageId?: string,
   ): AsyncGenerator<string, void, unknown> {
+    const startTime = Date.now();
+
     // Check for cancellation
     if (token?.isCancellationRequested) {
       throw new MistralClientError('Request cancelled', 'CANCELLED');
@@ -624,7 +651,19 @@ export class MistralClient {
           break;
         }
       }
+
+      // Record success metrics if streaming completed successfully
+      const latency = Date.now() - startTime;
+      this.performanceMonitor?.recordLatency(latency, true);
+      this.performanceMonitor?.recordSuccess();
     } catch (error) {
+      // Record failure metrics
+      const latency = Date.now() - startTime;
+      this.performanceMonitor?.recordLatency(latency, true);
+
+      const errorType = this.getErrorType(error);
+      this.performanceMonitor?.recordFailure(errorType);
+
       // Special handling for "no Route matched with those values" error
       if (
         error instanceof Error &&
@@ -791,6 +830,70 @@ export class MistralClient {
       'UNEXPECTED_ERROR',
       error,
     );
+  }
+
+  /**
+   * Get error type for performance monitoring
+   * @param error The error object
+   * @returns Error type string for categorization
+   */
+  private getErrorType(error: unknown): string {
+    if (error instanceof MistralClientError) {
+      return error.code;
+    }
+
+    if (error instanceof MistralError) {
+      const statusCode = error.statusCode;
+      switch (statusCode) {
+        case 401:
+          return 'INVALID_API_KEY';
+        case 429:
+          return 'RATE_LIMIT';
+        case 400:
+          return 'BAD_REQUEST';
+        case 422:
+          return 'VALIDATION_ERROR';
+        case 500:
+        case 502:
+        case 503:
+        case 504:
+          return 'SERVICE_UNAVAILABLE';
+        default:
+          return `API_ERROR_${statusCode}`;
+      }
+    }
+
+    if (error instanceof ConnectionError) {
+      return 'NETWORK_ERROR';
+    }
+
+    if (error instanceof RequestTimeoutError) {
+      return 'TIMEOUT_ERROR';
+    }
+
+    if (error instanceof RequestAbortedError) {
+      return 'CANCELLED';
+    }
+
+    if (error instanceof HTTPClientError) {
+      return 'HTTP_CLIENT_ERROR';
+    }
+
+    if (error instanceof Error) {
+      if (
+        error.message.includes('ECONNREFUSED') ||
+        error.message.includes('ENOTFOUND') ||
+        error.message.includes('ETIMEDOUT')
+      ) {
+        return 'NETWORK_ERROR';
+      }
+
+      if (error.message.includes('timeout')) {
+        return 'TIMEOUT_ERROR';
+      }
+    }
+
+    return 'UNKNOWN_ERROR';
   }
 
   /**

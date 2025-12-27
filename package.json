@@ -102,10 +102,10 @@
         },
         "predicte.debounceDelay": {
           "type": "number",
-          "default": 100,
+          "default": 150,
           "minimum": 50,
           "maximum": 1000,
-          "description": "Delay before triggering autocomplete (ms)",
+          "description": "Delay before triggering autocomplete (ms). Based on Zed's Codestral timing research, 150ms provides optimal balance between responsiveness and rate limiting.",
           "order": 6
         },
         "predicte.contextLines": {
@@ -181,6 +181,61 @@
           "default": false,
           "description": "Enable debug logging for troubleshooting (enables verbose debug logs in the output panel)",
           "order": 16
+        },
+        "predicte.enableKeybindings": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable keyboard shortcuts for multi-granularity completion acceptance",
+          "order": 17
+        },
+        "predicte.enablePerformanceMonitoring": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable performance monitoring and metrics collection",
+          "order": 18
+        },
+        "predicte.enableStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show Predicte status bar items (toggle and loading indicator)",
+          "order": 19
+        },
+        "predicte.enableConflictResolution": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable conflict resolution between LSP and AI completions",
+          "order": 20
+        },
+        "predicte.hideWhenLSPActive": {
+          "type": "boolean",
+          "default": true,
+          "description": "Hide AI completions when LSP menu is visible",
+          "order": 21
+        },
+        "predicte.modifierKeyForPreview": {
+          "type": "string",
+          "enum": [
+            "alt",
+            "ctrl",
+            "none"
+          ],
+          "default": "alt",
+          "description": "Modifier key to preview AI completions when LSP menu is visible",
+          "order": 22
+        },
+        "predicte.enableContinuationDetection": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically detect incomplete code and trigger follow-up completions",
+          "order": 23
+        },
+        "predicte.continuationDelay": {
+          "type": "number",
+          "default": 100,
+          "minimum": 50,
+          "maximum": 500,
+          "description": "Delay in milliseconds before triggering continuation detection",
+          "order": 24
         }
       }
     },
@@ -200,6 +255,22 @@
       {
         "command": "predicte.showStatus",
         "title": "Predicte: Show Status"
+      },
+      {
+        "command": "predicte.acceptWord",
+        "title": "Predicte: Accept Word"
+      },
+      {
+        "command": "predicte.acceptLine",
+        "title": "Predicte: Accept Line"
+      },
+      {
+        "command": "predicte.acceptFull",
+        "title": "Predicte: Accept Full"
+      },
+      {
+        "command": "predicte.showMetrics",
+        "title": "Predicte: Show Performance Metrics"
       }
     ],
     "keybindings": [
@@ -207,6 +278,36 @@
         "command": "predicte.toggle",
         "key": "ctrl+alt+c",
         "mac": "cmd+alt+c"
+      },
+      {
+        "command": "predicte.acceptFull",
+        "key": "tab",
+        "when": "editorHasInlineCompletion && config.predicte.enableKeybindings != false && !editorHasCompletionSuggestions"
+      },
+      {
+        "command": "predicte.acceptFull",
+        "key": "tab",
+        "when": "editorHasInlineCompletion && editorHasCompletionSuggestions && altKey"
+      },
+      {
+        "command": "predicte.acceptWord",
+        "key": "ctrl+right",
+        "when": "editorHasInlineCompletion && config.predicte.enableKeybindings != false && !editorHasCompletionSuggestions"
+      },
+      {
+        "command": "predicte.acceptWord",
+        "key": "ctrl+right",
+        "when": "editorHasInlineCompletion && editorHasCompletionSuggestions && altKey"
+      },
+      {
+        "command": "predicte.acceptLine",
+        "key": "ctrl+down",
+        "when": "editorHasInlineCompletion && config.predicte.enableKeybindings != false && !editorHasCompletionSuggestions"
+      },
+      {
+        "command": "predicte.acceptLine",
+        "key": "ctrl+down",
+        "when": "editorHasInlineCompletion && editorHasCompletionSuggestions && altKey"
       }
     ]
   },
