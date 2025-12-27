@@ -34,9 +34,10 @@ Predicte is a lightweight AI-powered autocomplete extension for VS Code using Mi
 - **gh_grep**: Search real-world code examples from GitHub
 - **context7**: Fetch up-to-date documentation for libraries
 - **exa**: General web searches and content extraction
-- **exa**: Extracts content from specific URLs
 - **exa**: Search and get relevant code snippets, examples, and documentation from open source libraries, GitHub repositories, and programming frameworks.
 - **playwright**: UI testing (when applicable)
+- **webfetch**: Fetch web content
+- **web-search-prime**: Web searches
 
 ## Build & Development Commands
 
