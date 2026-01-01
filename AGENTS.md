@@ -15,8 +15,8 @@ Predicte is a lightweight AI-powered autocomplete extension for VS Code using Mi
 - **builder**: For implementing features, fixing bugs, or making code changes
 - **code-reviewer**: To review code and provide feedback.
 - **qa-specialist**: Audit code, verifies file structures, and runs tests
-- **git-flow**: creating branches for new features or bug fixes, making commits with clear and concise messages, opening pull requests for code review, and merging changes after approval.
-- **doc-manager**: For adding, updating, or fixing documentation
+- **git-manager**: creating branches for new features or bug fixes, making commits with clear and concise messages, opening pull requests for code review, and merging changes after approval.
+- **doc-writer**: For adding, updating, or fixing documentation
 
 ### Tool Usage Guidelines
 

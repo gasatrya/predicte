@@ -22,7 +22,7 @@ export default [
 
   // Apply configs to TypeScript files
   {
-    files: ['src/**/*.ts'],
+    files: ['src/**/*.ts', 'src/**/*.test.ts'],
 
     plugins: {
       '@typescript-eslint': typescriptEslint.plugin,
@@ -101,6 +101,7 @@ export default [
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       'no-console': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
     },
   },
 ];
