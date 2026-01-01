@@ -6,12 +6,6 @@ Predicte is a lightweight AI-powered autocomplete extension for VS Code using Mi
 
 ---
 
-## The 80/20 Rule
-
-Spend "20%" effort on creating a perfectly broken-down roadmap. If do this right, the "80%" (the actual coding) will be trivial and error-free. Never rush the plan.
-
----
-
 ## Specialist Agent Usage
 
 ### When to Invoke Specialists
@@ -23,18 +17,6 @@ Spend "20%" effort on creating a perfectly broken-down roadmap. If do this right
 - **qa-specialist**: Audit code, verifies file structures, and runs tests
 - **git-flow**: creating branches for new features or bug fixes, making commits with clear and concise messages, opening pull requests for code review, and merging changes after approval.
 - **doc-manager**: For adding, updating, or fixing documentation
-
-### Workflow Guidelines
-
-1. **Plan:** Create the detailed roadmap and micro-tasks. **(Wait for Human Approval)**.
-2. **Build:** Implement one micro-task.
-3. **Review:** Agent checks code quality.
-  * *If bad:* Send back to **Build** with specific feedback.
-  * *If good:* Move to **Test**.
-4. **Test:** Agent checks functionality.
-  * *If fails:* Send back to **Build**.
-  * *If passes:* Move to next micro-task. **(Wait for Human Approval)**
-5. **Commit:** Once all tasks are done, package it up and commit.
 
 ### Tool Usage Guidelines
 
