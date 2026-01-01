@@ -4,40 +4,45 @@
 
 Predicte is a lightweight AI-powered autocomplete extension for VS Code using Mistral's Codestral model. The project follows TypeScript best practices with a focus on clean, maintainable code.
 
+---
+
+## The 80/20 Rule
+
+Spend "20%" effort on creating a perfectly broken-down roadmap. If do this right, the "80%" (the actual coding) will be trivial and error-free. Never rush the plan.
+
+---
+
 ## Specialist Agent Usage
 
 ### When to Invoke Specialists
 
 - **explore**: For exploring codebase and understanding its structure
-- **builder**: For implementing features, fixing bugs, or making code changes
-- **senior-builder**: Use this specialist when `builder` is unable to resolve complex issues or when the codebase requires significant refactoring.
-- **junior-builder**: For implementing small, easy, fast, and straightforward changes
-- **reviewer**: Review code before moving to QA
-- **qa-specialist**: Audit code, verifies file structures, and runs tests
-- **debugger**: When encountering bugs, issues, runtime errors or logical bugs
 - **researcher**: For gathering documentation, examples, or best practices
-- **git-committer**: To commit changes with appropriate messages
-- **vitest-specialist**: For writing and maintaining tests (when tests are added)
-- **technical-writer**: For adding, updating, or fixing documentation
-- **maintenance-specialist**: Handles debt reduction, log removal, formatting, and file deletion.
+- **builder**: For implementing features, fixing bugs, or making code changes
+- **code-reviewer**: To review code and provide feedback.
+- **qa-specialist**: Audit code, verifies file structures, and runs tests
+- **git-flow**: creating branches for new features or bug fixes, making commits with clear and concise messages, opening pull requests for code review, and merging changes after approval.
+- **doc-manager**: For adding, updating, or fixing documentation
 
 ### Workflow Guidelines
 
-1. **Plan**: Understand requirements and create implementation plan
-2. **Build**: Use builder agent to implement changes
-3. **Review**: Use reviewer agent to check code quality
-4. **Test**: Use QA specialist to validate functionality
-5. **Commit**: Use git committer to save changes
+1. **Plan:** Create the detailed roadmap and micro-tasks. **(Wait for Human Approval)**.
+2. **Build:** Implement one micro-task.
+3. **Review:** Agent checks code quality.
+  * *If bad:* Send back to **Build** with specific feedback.
+  * *If good:* Move to **Test**.
+4. **Test:** Agent checks functionality.
+  * *If fails:* Send back to **Build**.
+  * *If passes:* Move to next micro-task. **(Wait for Human Approval)**
+5. **Commit:** Once all tasks are done, package it up and commit.
 
 ### Tool Usage Guidelines
 
 - **gh_grep**: Search real-world code examples from GitHub
 - **context7**: Fetch up-to-date documentation for libraries
-- **exa**: General web searches and content extraction
-- **exa**: Search and get relevant code snippets, examples, and documentation from open source libraries, GitHub repositories, and programming frameworks.
 - **playwright**: UI testing (when applicable)
-- **webfetch**: Fetch web content
-- **web-search-prime**: Web searches
+
+---
 
 ## Build & Development Commands
 
@@ -71,6 +76,8 @@ npm run pretest           # Run before tests: compile-tests + compile + lint
 
 - Press F5 to launch VS Code Extension Development Host
 - Debug configuration in `.vscode/launch.json`
+
+---
 
 ## Code Style Guidelines
 
@@ -166,12 +173,96 @@ src/
 - Clear cache on configuration changes
 - Provide cache statistics
 
+---
+
+## Quality Gates
+
+Each feature must pass through these checkpoints before merging:
+
+### Gate 1: Requirements Ready ☐
+- [ ] Clear user requirements documented
+- [ ] Definition of Done specified
+- [ ] Tech constraints identified
+- [ ] Branch created via `@git-flow`
+
+### Gate 2: Design Complete ☐
+- [ ] Implementation plan created
+- [ ] Relevant files explored
+- [ ] Research documented (if needed)
+- [ ] Dependencies identified
+
+### Gate 3: Implementation Ready ☐
+- [ ] Context files provided to `@builder`
+- [ ] Technical specifications clear
+- [ ] Testing approach defined
+
+### Gate 4: Code Complete ☐
+- [ ] Code written
+- [ ] Passes linting (`npm run check`)
+- [ ] Follows project patterns
+- [ ] Self-reviewed
+
+### Gate 5: Review Complete ☐
+- [ ] `@code-reviewer` approved
+- [ ] Issues addressed
+- [ ] Changes committed
+
+### Gate 6: Testing Complete ☐
+- [ ] `@qa-specialist` verified
+- [ ] Tests pass (`npm run test`)
+- [ ] No critical bugs
+
+### Gate 7: Ready for Merge ☐
+- [ ] PR created with clear description
+- [ ] Documentation updated (if needed)
+- [ ] Approved for merge
+
+---
+
+## Testing Strategy
+
+### QA Involvement Points
+
+1. **Before Implementation**: Test plan creation
+2. **During Implementation**: Component-level testing
+3. **After Implementation**: Integration testing
+4. **Before PR**: Full regression testing
+
+### Test Coverage Requirements
+
+| Scenario | Coverage |
+|----------|----------|
+| Critical paths (authentication, data loading) | 100% |
+| New features | 80%+ |
+| Bug fixes | Specific scenario tests |
+| Refactoring | Existing tests still pass |
+
+---
+
+## Documentation Requirements
+
+### When Documentation is Required
+
+Document must concise and clear.
+
+| Change | Documentation Needed |
+|--------|---------------------|
+| New feature | Feature doc + API changes |
+| Bug fix | Issue resolution doc |
+| Breaking change | Migration guide |
+| New component | Component usage doc |
+| Complex logic | In-code comments + architecture doc |
+
+---
+
 ## Development Environment
 
 - Node.js 20.x or later required
 - VS Code 1.90.0 or later for extension development
 - TypeScript 5.9.3
 - Webpack for bundling
+
+---
 
 ## Quality Standards
 
