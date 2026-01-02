@@ -343,6 +343,7 @@
   },
   "dependencies": {
     "@mistralai/mistralai": "^1.11.0",
+    "@types/node": "^25.0.3",
     "zod": "^4.3.4"
   }
 }
