@@ -12,10 +12,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true,
-
-    /* Testing */
-    "types": ["vitest/globals", "node"]
+    "noUncheckedSideEffectImports": true
   },
   "include": ["src/**/*", "src/**/*.test.ts"],
   "exclude": ["node_modules", "dist"]
