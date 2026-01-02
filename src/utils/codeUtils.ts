@@ -6,18 +6,13 @@
  */
 
 import * as vscode from 'vscode';
+import type {
+  LanguageParameters,
+  CompletionCandidate,
+  ScoreDetails,
+} from '../types/code';
 
-/**
- * Language-specific model parameters for completion generation
- *
- * Defines optimal temperature, maxTokens, and stop sequences
- * for different programming languages.
- */
-export interface LanguageParameters {
-  temperature: number;
-  maxTokens: number;
-  stopSequences: string[];
-}
+export type { LanguageParameters, CompletionCandidate, ScoreDetails };
 
 /**
  * Get language-specific model parameters for completion generation
@@ -488,294 +483,6 @@ export function applyIndentation(text: string, indentation: string): string {
 }
 
 /**
- * Completion candidate with quality score
- *
- * Represents a completion candidate along with its quality assessment.
- */
-export interface CompletionCandidate {
-  text: string;
-  score: number;
-  details: ScoreDetails;
-}
-
-/**
- * Detailed scoring breakdown for a completion candidate
- */
-export interface ScoreDetails {
-  relevanceScore: number;
-  codeQualityScore: number;
-  lengthScore: number;
-  languagePatternScore: number;
-}
-
-/**
- * Score a completion candidate based on multiple criteria
- *
- * Evaluates the completion on:
- * - Relevance to context (prefix/suffix)
- * - Code quality (syntax, indentation, naming)
- * - Length appropriateness
- * - Language-specific patterns
- *
- * @param candidate The completion text to score
- * @param prefix The prefix context before the cursor
- * @param suffix The suffix context after the cursor
- * @param languageId The language identifier for language-specific patterns
- * @returns Score details with individual component scores
- */
-export function scoreCompletion(
-  candidate: string,
-  prefix: string,
-  suffix: string,
-  languageId?: string,
-): ScoreDetails {
-  const relevanceScore = calculateRelevanceScore(candidate, prefix, suffix);
-  const codeQualityScore = calculateCodeQualityScore(candidate, languageId);
-  const lengthScore = calculateLengthScore(candidate, prefix, suffix);
-  const languagePatternScore = calculateLanguagePatternScore(
-    candidate,
-    languageId,
-  );
-
-  const details: ScoreDetails = {
-    relevanceScore,
-    codeQualityScore,
-    lengthScore,
-    languagePatternScore,
-  };
-
-  return details;
-}
-
-/**
- * Calculate relevance score based on context match
- *
- * @param candidate The completion text
- * @param prefix The prefix context
- * @param suffix The suffix context
- * @returns Relevance score (0-1)
- */
-function calculateRelevanceScore(
-  candidate: string,
-  prefix: string,
-  suffix: string,
-): number {
-  let score = 0;
-
-  // Check if completion starts with expected patterns
-  const trimmedPrefix = prefix.trim();
-  const lastChar = trimmedPrefix.slice(-1);
-
-  // Higher score if completion follows common patterns
-  if (lastChar === '.') {
-    // Likely a property/method access
-    score = candidate.match(/^[a-zA-Z_$][a-zA-Z0-9_$]*$/) ? 0.9 : 0.5;
-  } else if (lastChar === '(' || lastChar === ',') {
-    // Likely a function argument
-    score = candidate.match(/^[a-zA-Z_$]/) ? 0.85 : 0.4;
-  } else {
-    // General code completion
-    score = 0.7;
-  }
-
-  // Check if completion is relevant to suffix
-  if (suffix.trim().length > 0) {
-    const suffixFirstChar = suffix.trim()[0];
-    if (candidate.endsWith(suffixFirstChar)) {
-      score += 0.1;
-    }
-  }
-
-  return Math.min(score, 1);
-}
-
-/**
- * Calculate code quality score
- *
- * Evaluates:
- * - Syntax correctness (basic checks)
- * - Indentation consistency
- * - Naming conventions
- *
- * @param candidate The completion text
- * @param languageId The language identifier
- * @returns Code quality score (0-1)
- */
-function calculateCodeQualityScore(
-  candidate: string,
-  _languageId?: string,
-): number {
-  let score = 1;
-  const lines = candidate.split('\n');
-
-  // Check for syntax issues
-  const openBraces = (candidate.match(/\{/g) ?? []).length;
-  const closeBraces = (candidate.match(/\}/g) ?? []).length;
-  const openParens = (candidate.match(/\(/g) ?? []).length;
-  const closeParens = (candidate.match(/\)/g) ?? []).length;
-  const openBrackets = (candidate.match(/\[/g) ?? []).length;
-  const closeBrackets = (candidate.match(/\]/g) ?? []).length;
-
-  // Deduct for unbalanced brackets (unless it's intentional partial completion)
-  if (openBraces > closeBraces + 2) {
-    score -= 0.2;
-  }
-  if (openParens > closeParens + 2) {
-    score -= 0.2;
-  }
-  if (openBrackets > closeBrackets + 2) {
-    score -= 0.2;
-  }
-
-  // Check indentation consistency
-  const indentPattern = lines.map((line) => {
-    const match = line.match(/^(\s*)/);
-    return match ? match[0].length : 0;
-  });
-
-  // Check if indentation is consistent
-  let consistentIndent = true;
-  for (let i = 1; i < indentPattern.length; i++) {
-    const diff = indentPattern[i] - indentPattern[i - 1];
-    if (diff !== 0 && diff !== 2 && diff !== 4 && diff !== 8 && diff !== -2) {
-      consistentIndent = false;
-      break;
-    }
-  }
-
-  if (!consistentIndent && lines.length > 1) {
-    score -= 0.15;
-  }
-
-  // Check for common anti-patterns
-  if (candidate.includes('TODO') || candidate.includes('FIXME')) {
-    score -= 0.1;
-  }
-
-  return Math.max(score, 0);
-}
-
-/**
- * Calculate length appropriateness score
- *
- * Penalizes completions that are too short or too long.
- * Optimal length depends on context.
- *
- * @param candidate The completion text
- * @param prefix The prefix context
- * @param suffix The suffix context
- * @returns Length score (0-1)
- */
-function calculateLengthScore(
-  candidate: string,
-  prefix: string,
-  _suffix: string,
-): number {
-  const length = candidate.trim().length;
-  const trimmedPrefix = prefix.trim();
-  const lastChar = trimmedPrefix.slice(-1);
-
-  // Determine optimal length based on context
-  let optimalMin = 2;
-  let optimalMax = 50;
-
-  if (lastChar === '.') {
-    // Property/method access - typically short
-    optimalMin = 1;
-    optimalMax = 30;
-  } else if (lastChar === '(' || lastChar === ',') {
-    // Function argument - typically short to medium
-    optimalMin = 1;
-    optimalMax = 50;
-  } else if (
-    trimmedPrefix.endsWith('const ') ||
-    trimmedPrefix.endsWith('let ')
-  ) {
-    // Variable declaration - typically medium
-    optimalMin = 5;
-    optimalMax = 100;
-  } else if (
-    trimmedPrefix.endsWith('function ') ||
-    trimmedPrefix.endsWith('=>')
-  ) {
-    // Function definition - typically longer
-    optimalMin = 5;
-    optimalMax = 150;
-  }
-
-  // Calculate score based on optimal range
-  if (length < optimalMin) {
-    return length / optimalMin;
-  } else if (length <= optimalMax) {
-    return 1;
-  } else {
-    // Gradual penalty for too-long completions
-    const excess = length - optimalMax;
-    return Math.max(0, 1 - excess / optimalMax);
-  }
-}
-
-/**
- * Calculate language pattern score
- *
- * Rewards completions that match language-specific patterns.
- *
- * @param candidate The completion text
- * @param languageId The language identifier
- * @returns Language pattern score (0-1)
- */
-function calculateLanguagePatternScore(
-  candidate: string,
-  languageId?: string,
-): number {
-  if (!languageId) {
-    return 0.5;
-  }
-
-  const normalizedLanguageId = languageId.toLowerCase().replace('react', '');
-  let score = 0.5;
-
-  // TypeScript/JavaScript patterns
-  if (
-    normalizedLanguageId === 'typescript' ||
-    normalizedLanguageId === 'javascript'
-  ) {
-    // Check for common patterns
-    if (candidate.match(/^[a-zA-Z_$][a-zA-Z0-9_$]*$/)) {
-      score = 0.9; // Simple identifier
-    } else if (candidate.match(/^[a-zA-Z_$][a-zA-Z0-9_$]*\s*\(/)) {
-      score = 0.95; // Function call
-    } else if (candidate.match(/^:\s*[a-zA-Z]/)) {
-      score = 0.85; // Type annotation
-    } else if (candidate.match(/^\s*=>\s*/)) {
-      score = 0.9; // Arrow function
-    }
-  }
-
-  // Python patterns
-  if (normalizedLanguageId === 'python') {
-    if (candidate.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
-      score = 0.9; // Simple identifier
-    } else if (candidate.match(/^[a-zA-Z_][a-zA-Z0-9_]*\s*\(/)) {
-      score = 0.95; // Function call
-    } else if (candidate.match(/^\s+.*:\s*$/)) {
-      score = 0.85; // Block with colon
-    }
-  }
-
-  // Java/C# patterns
-  if (normalizedLanguageId === 'java' || normalizedLanguageId === 'csharp') {
-    if (candidate.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
-      score = 0.9;
-    } else if (candidate.match(/^\s*[a-zA-Z]/)) {
-      score = 0.85;
-    }
-  }
-
-  return score;
-}
-
-/**
  * Filter out low-quality completion candidates
  *
  * Removes candidates that:
@@ -823,6 +530,223 @@ export function filterCandidates(
   });
 
   return filtered;
+}
+
+/**
+ * Score a completion candidate based on multiple criteria
+ *
+ * Evaluates the completion on:
+ * - Relevance to context (prefix/suffix)
+ * - Code quality (syntax, indentation, naming)
+ * - Length appropriateness
+ * - Language-specific patterns
+ *
+ * @param candidate The completion text to score
+ * @param prefix The prefix context before the cursor
+ * @param suffix The suffix context after the cursor
+ * @param languageId The language identifier for language-specific patterns
+ * @returns Score details with individual component scores
+ */
+export function scoreCompletion(
+  candidate: string,
+  prefix: string,
+  suffix: string,
+  languageId?: string,
+): ScoreDetails {
+  const relevanceScore = calculateRelevanceScore(candidate, prefix, suffix);
+  const codeQualityScore = calculateCodeQualityScore(candidate, languageId);
+  const lengthScore = calculateLengthScore(candidate, prefix, suffix);
+  const languagePatternScore = calculateLanguagePatternScore(
+    candidate,
+    languageId,
+  );
+
+  const details: ScoreDetails = {
+    relevanceScore,
+    codeQualityScore,
+    lengthScore,
+    languagePatternScore,
+  };
+
+  return details;
+}
+
+/**
+ * Calculate relevance score based on context match
+ */
+function calculateRelevanceScore(
+  candidate: string,
+  prefix: string,
+  suffix: string,
+): number {
+  let score = 0;
+
+  const trimmedPrefix = prefix.trim();
+  const lastChar = trimmedPrefix.slice(-1);
+
+  if (lastChar === '.') {
+    score = candidate.match(/^[a-zA-Z_$][a-zA-Z0-9_$]*$/) ? 0.9 : 0.5;
+  } else if (lastChar === '(' || lastChar === ',') {
+    score = candidate.match(/^[a-zA-Z_$]/) ? 0.85 : 0.4;
+  } else {
+    score = 0.7;
+  }
+
+  if (suffix.trim().length > 0) {
+    const suffixFirstChar = suffix.trim()[0];
+    if (candidate.endsWith(suffixFirstChar)) {
+      score += 0.1;
+    }
+  }
+
+  return Math.min(score, 1);
+}
+
+/**
+ * Calculate code quality score
+ */
+function calculateCodeQualityScore(
+  candidate: string,
+  _languageId?: string,
+): number {
+  let score = 1;
+  const lines = candidate.split('\n');
+
+  const openBraces = (candidate.match(/\{/g) ?? []).length;
+  const closeBraces = (candidate.match(/\}/g) ?? []).length;
+  const openParens = (candidate.match(/\(/g) ?? []).length;
+  const closeParens = (candidate.match(/\)/g) ?? []).length;
+  const openBrackets = (candidate.match(/\[/g) ?? []).length;
+  const closeBrackets = (candidate.match(/\]/g) ?? []).length;
+
+  if (openBraces > closeBraces + 2) {
+    score -= 0.2;
+  }
+  if (openParens > closeParens + 2) {
+    score -= 0.2;
+  }
+  if (openBrackets > closeBrackets + 2) {
+    score -= 0.2;
+  }
+
+  const indentPattern = lines.map((line) => {
+    const match = line.match(/^(\s*)/);
+    return match ? match[0].length : 0;
+  });
+
+  let consistentIndent = true;
+  for (let i = 1; i < indentPattern.length; i++) {
+    const diff = indentPattern[i] - indentPattern[i - 1];
+    if (diff !== 0 && diff !== 2 && diff !== 4 && diff !== 8 && diff !== -2) {
+      consistentIndent = false;
+      break;
+    }
+  }
+
+  if (!consistentIndent && lines.length > 1) {
+    score -= 0.15;
+  }
+
+  if (candidate.includes('TODO') || candidate.includes('FIXME')) {
+    score -= 0.1;
+  }
+
+  return Math.max(score, 0);
+}
+
+/**
+ * Calculate length appropriateness score
+ */
+function calculateLengthScore(
+  candidate: string,
+  prefix: string,
+  _suffix: string,
+): number {
+  const length = candidate.trim().length;
+  const trimmedPrefix = prefix.trim();
+  const lastChar = trimmedPrefix.slice(-1);
+
+  let optimalMin = 2;
+  let optimalMax = 50;
+
+  if (lastChar === '.') {
+    optimalMin = 1;
+    optimalMax = 30;
+  } else if (lastChar === '(' || lastChar === ',') {
+    optimalMin = 1;
+    optimalMax = 50;
+  } else if (
+    trimmedPrefix.endsWith('const ') ||
+    trimmedPrefix.endsWith('let ')
+  ) {
+    optimalMin = 5;
+    optimalMax = 100;
+  } else if (
+    trimmedPrefix.endsWith('function ') ||
+    trimmedPrefix.endsWith('=>')
+  ) {
+    optimalMin = 5;
+    optimalMax = 150;
+  }
+
+  if (length < optimalMin) {
+    return length / optimalMin;
+  } else if (length <= optimalMax) {
+    return 1;
+  } else {
+    const excess = length - optimalMax;
+    return Math.max(0, 1 - excess / optimalMax);
+  }
+}
+
+/**
+ * Calculate language pattern score
+ */
+function calculateLanguagePatternScore(
+  candidate: string,
+  languageId?: string,
+): number {
+  if (!languageId) {
+    return 0.5;
+  }
+
+  const normalizedLanguageId = languageId.toLowerCase().replace('react', '');
+  let score = 0.5;
+
+  if (
+    normalizedLanguageId === 'typescript' ||
+    normalizedLanguageId === 'javascript'
+  ) {
+    if (candidate.match(/^[a-zA-Z_$][a-zA-Z0-9_$]*$/)) {
+      score = 0.9;
+    } else if (candidate.match(/^[a-zA-Z_$][a-zA-Z0-9_$]*\s*\(/)) {
+      score = 0.95;
+    } else if (candidate.match(/^:\s*[a-zA-Z]/)) {
+      score = 0.85;
+    } else if (candidate.match(/^\s*=>\s*/)) {
+      score = 0.9;
+    }
+  }
+
+  if (normalizedLanguageId === 'python') {
+    if (candidate.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
+      score = 0.9;
+    } else if (candidate.match(/^[a-zA-Z_][a-zA-Z0-9_]*\s*\(/)) {
+      score = 0.95;
+    } else if (candidate.match(/^\s+.*:\s*$/)) {
+      score = 0.85;
+    }
+  }
+
+  if (normalizedLanguageId === 'java' || normalizedLanguageId === 'csharp') {
+    if (candidate.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
+      score = 0.9;
+    } else if (candidate.match(/^\s*[a-zA-Z]/)) {
+      score = 0.85;
+    }
+  }
+
+  return score;
 }
 
 /**

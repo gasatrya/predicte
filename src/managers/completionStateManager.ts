@@ -12,21 +12,9 @@
  */
 
 import * as vscode from 'vscode';
+import type { CompletionState } from '../types/completion';
 
-/**
- * Completion state interface
- *
- * Tracks all necessary information about an active completion
- * to enable edit interpolation and conflict detection.
- */
-export interface CompletionState {
-  completion: string | null; // The predicted completion text
-  baseDocumentText: string | null; // Document snapshot when completion was generated
-  cursorPosition: vscode.Position | null; // Cursor position when completion was generated
-  completionRange: vscode.Range | null; // Range where completion applies
-  timestamp: number; // When completion was generated (milliseconds)
-  documentUri: string | null; // Document URI to track which file
-}
+export type { CompletionState };
 
 /**
  * Completion State Manager

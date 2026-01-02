@@ -6,26 +6,12 @@
  */
 
 import * as vscode from 'vscode';
+import type {
+  CodeContext,
+  FormattedCompletionContext,
+} from '../types/completion';
 
-export interface CodeContext {
-  prefix: string;
-  suffix: string;
-  language: string;
-  cursorLine: number;
-  filename?: string;
-  imports?: string;
-  definitions?: string;
-  types?: string;
-}
-
-/**
- * Formatted context with system prompt and FIM markers
- */
-export interface FormattedCompletionContext {
-  systemPrompt: string;
-  prefix: string;
-  suffix: string;
-}
+export type { CodeContext, FormattedCompletionContext };
 
 /**
  * Extract context from a document at a given position

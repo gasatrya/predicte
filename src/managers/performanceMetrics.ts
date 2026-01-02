@@ -16,58 +16,23 @@
  */
 
 import { Logger } from '../utils/logger';
+import type { MetricsSummary } from '../types/metrics';
+
+export type { MetricsSummary };
 
 /**
- * Performance metrics data structure
+ * Internal performance metrics data structure
  */
 interface PerformanceMetrics {
-  // Latency tracking (in milliseconds)
   latencies: number[];
-
-  // Success/failure tracking
   successCount: number;
   failureCount: number;
-
-  // Error breakdown
   errorTypes: Map<string, number>;
-
-  // Cache tracking
   cacheHits: number;
   cacheMisses: number;
-
-  // Request counting
   totalRequests: number;
   streamingRequests: number;
   nonStreamingRequests: number;
-}
-
-/**
- * Performance metrics summary for reporting
- */
-export interface MetricsSummary {
-  // Latency percentiles (in milliseconds)
-  p50: number;
-  p90: number;
-  p95: number;
-  p99: number;
-  avg: number;
-
-  // Success metrics
-  successRate: number;
-  failureRate: number;
-
-  // Error breakdown
-  errorTypes: Record<string, number>;
-
-  // Cache metrics
-  cacheHitRate: number;
-  cacheHitCount: number;
-  cacheMissCount: number;
-
-  // Request breakdown
-  totalRequests: number;
-  streamingRate: number;
-  nonStreamingRate: number;
 }
 
 /**
