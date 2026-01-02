@@ -1,5 +1,8 @@
 # Predicte
 
+![CI](https://github.com/predicte/predicte/actions/workflows/ci.yml/badge.svg)
+![Release](https://img.shields.io/github/release/predicte/predicte.svg)
+
 Lightweight AI-powered code autocomplete extension for VS Code using Mistral's Codestral model.
 
 ## Overview
