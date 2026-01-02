@@ -4,7 +4,7 @@
 
 Predicte is a lightweight AI-powered autocomplete extension for VS Code using Mistral's Codestral model. The project follows TypeScript best practices with a focus on clean, maintainable code.
 
-IMPORTANT: Use `bd` for task tracking
+IMPORTANT: "Use `bd` command for task tracking"
 
 ---
 
