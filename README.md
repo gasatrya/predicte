@@ -5,6 +5,8 @@
 
 Lightweight AI-powered code autocomplete extension for VS Code using Mistral's Codestral model.
 
+> **Note**: This extension is still under active development.
+
 ## Features
 
 - **Inline completions** - Fast, non-intrusive suggestions as you type
@@ -61,7 +63,3 @@ Full configuration list available in settings.
 ## License
 
 MIT
-
-## Contributing
-
-Contributions welcome! Please read contributing guidelines before submitting PRs.
