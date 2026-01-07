@@ -91,14 +91,8 @@ export class PredicteCompletionProvider
   /**
    * Provide inline completion items
    *
-   * This is the main method called by VS Code when requesting completions.
-   * It implements debouncing, cancellation, and smart triggering logic.
-   *
-   * @param document The document in which the completion was requested
-   * @param position The position at which the completion was requested
-   * @param context Additional context about the completion request
-   * @param token Cancellation token to abort the request
-   * @returns Promise resolving to inline completion items
+   * Main method called by VS Code when requesting completions.
+   * Implements debouncing, cancellation, and smart triggering logic.
    */
   async provideInlineCompletionItems(
     document: vscode.TextDocument,
@@ -317,15 +311,7 @@ export class PredicteCompletionProvider
   /**
    * Get streaming completion from Mistral API
    *
-   * Handles streaming completions and aggregates the chunks into a single string.
-   *
-   * @param prefix The prefix text before the cursor
-   * @param suffix The suffix text after the cursor (optional)
-   * @param token Cancellation token to abort the request
-   * @param systemPrompt Optional system prompt for prompt engineering
-   * @param languageId The language identifier for language-aware parameters (optional)
-   * @returns Promise resolving to the completion text, or null if no completion
-   * @throws MistralClientError if the request fails
+   * Handles streaming completions and aggregates chunks into a single string.
    */
   private async getStreamingCompletion(
     prefix: string,
@@ -368,10 +354,6 @@ export class PredicteCompletionProvider
    * Check if completion should be triggered at the given position
    *
    * Uses smart triggering logic to avoid unnecessary API calls.
-   *
-   * @param document The document
-   * @param position The cursor position
-   * @returns true if completion should be triggered
    */
   private shouldTrigger(
     document: vscode.TextDocument,
@@ -380,11 +362,6 @@ export class PredicteCompletionProvider
     return shouldTriggerInternal(document, position);
   }
 
-  /**
-   * Handle configuration changes
-   *
-   * Updates internal state when user changes configuration settings.
-   */
   private handleConfigChange(): void {
     this.logger.debug('Configuration changed, updating completion provider');
 
@@ -397,11 +374,6 @@ export class PredicteCompletionProvider
     this.logger.debug('Completion provider updated with new configuration');
   }
 
-  /**
-   * Handle secret storage changes (API key changes)
-   *
-   * Resets the Mistral client when API key changes.
-   */
   private handleSecretChange(): void {
     this.logger.debug('Secret storage changed, resetting Mistral client');
     this.mistralClient.resetClient();
@@ -410,10 +382,7 @@ export class PredicteCompletionProvider
   /**
    * Handle document changes for interpolation
    *
-   * Tracks document changes to interpolate completions when user
-   * types while a completion is active.
-   *
-   * @param event The document change event
+   * Tracks document changes to interpolate completions when user types while a completion is active.
    */
   private handleDocumentChange(event: vscode.TextDocumentChangeEvent): void {
     // Skip if no active completion
@@ -455,12 +424,8 @@ export class PredicteCompletionProvider
   /**
    * Update inline preview with adjusted completion
    *
-   * Triggers a refresh of inline completions to show the
-   * interpolated completion text.
-   *
-   * Note: VS Code doesn't provide direct API to update inline preview,
-   * so we trigger a refresh which will cause provideInlineCompletionItems
-   * to be called again.
+   * Triggers a refresh of inline completions to show interpolated completion text.
+   * Note: VS Code doesn't provide direct API to update inline preview.
    */
   private updateInlinePreview(): void {
     // Trigger a new completion request which will use the interpolated completion
@@ -471,11 +436,7 @@ export class PredicteCompletionProvider
   /**
    * Handle errors from completion requests
    *
-   * Logs errors and returns null to indicate no completion.
-   * Shows user-friendly error messages for common errors.
-   *
-   * @param error The error to handle
-   * @returns null (no completion)
+   * Logs errors and returns null. Shows user-friendly error messages for common errors.
    */
   private handleError(error: unknown): null {
     if (error instanceof MistralClientError) {
@@ -529,32 +490,16 @@ export class PredicteCompletionProvider
     return null;
   }
 
-  /**
-   * Clear the completion cache
-   *
-   * Called by the clear cache command to force fresh completions.
-   */
   clearCache(): void {
     this.mistralClient.clearCache();
     this.logger.info('Completion cache cleared');
   }
 
-  /**
-   * Clear active completion state
-   *
-   * Called when user accepts a completion or when we need to
-   * reset the completion state.
-   */
   clearActiveCompletion(): void {
     this.completionStateManager.clearCompletion();
     this.logger.debug('Active completion cleared');
   }
 
-  /**
-   * Check if AI completion should hide due to LSP menu
-   * @param context Inline completion context
-   * @returns true if AI completion should hide
-   */
   private shouldHideForLSP(context: vscode.InlineCompletionContext): boolean {
     if (!this.config.hideWhenLSPActive) {
       return false;
@@ -565,10 +510,6 @@ export class PredicteCompletionProvider
     return context.triggerKind === vscode.InlineCompletionTriggerKind.Invoke;
   }
 
-  /**
-   * Check if modifier key is pressed for previewing AI completions
-   * @returns true if modifier key is pressed
-   */
   private isModifierPressed(): boolean {
     // VS Code doesn't provide direct API to check key state
     // We'll use keyboard event tracking or rely on keybinding context
@@ -578,12 +519,6 @@ export class PredicteCompletionProvider
     return false;
   }
 
-  /**
-   * Schedule continuation detection after a completion
-   * @param document The document
-   * @param position The cursor position
-   * @param token Cancellation token
-   */
   private scheduleContinuation(
     document: vscode.TextDocument,
     position: vscode.Position,
@@ -605,12 +540,6 @@ export class PredicteCompletionProvider
     }, this.config.continuationDelay);
   }
 
-  /**
-   * Check for incomplete code and trigger continuation
-   * @param document The document
-   * @param position The cursor position
-   * @param token Cancellation token
-   */
   private async checkForContinuation(
     document: vscode.TextDocument,
     position: vscode.Position,
@@ -637,11 +566,6 @@ export class PredicteCompletionProvider
     }
   }
 
-  /**
-   * Dispose of resources
-   *
-   * Cleans up timers, watchers, and other resources.
-   */
   dispose(): void {
     this.logger.info('Disposing PredicteCompletionProvider');
 

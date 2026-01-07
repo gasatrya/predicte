@@ -1,45 +1,10 @@
 /**
  * Mistral Client Service
  *
- * This module provides a production-ready client for Mistral's Codestral FIM API
- * using the official @mistralai/mistralai SDK (v1.11.0).
+ * Production-ready client for Mistral's Codestral FIM API using the official @mistralai/mistralai SDK.
  *
- * Features:
- * - Non-streaming and streaming FIM completions
- * - Built-in caching with configurable TTL
- * - Automatic retry with exponential backoff
- * - Comprehensive error handling
- * - Client reset when API key changes
- * - Support for both Mistral and Codestral API endpoints
- *
- * API Endpoints:
- * - Regular Mistral: https://api.mistral.ai (for Mistral API keys)
- * - Codestral: https://codestral.mistral.ai (for Codestral-specific API keys)
- * - FIM Complete: /v1/fim/completions
- *
- * IMPORTANT: serverURL Configuration
- * ====================================
- * The SDK appends the API version path (/v1/fim/completions) to the serverURL.
- * Therefore, serverURL should NOT include /v1 in the path.
- *
- * CORRECT serverURL examples:
- * - https://api.mistral.ai (Mistral regular endpoint)
- * - https://codestral.mistral.ai (Codestral-specific endpoint)
- *
- * INCORRECT serverURL examples (will cause URL construction issues):
- * - https://api.mistral.ai/v1
- * - https://codestral.mistral.ai/v1
- * - https://api.mistral.ai/v1/
- *
- * Using incorrect serverURL will result in URLs like:
- * https://codestral.mistral.ai/v1/v1/fim/completions
- * which causes "no Route matched with those values" errors.
- *
- * Supported Models:
- * - codestral-latest (recommended)
- * - codestral-22b
- * - codestral-2405
- * - codestral-2404
+ * IMPORTANT: serverURL should NOT include /v1 (e.g., use https://codestral.mistral.ai, NOT https://codestral.mistral.ai/v1).
+ * The SDK appends /v1/fim/completions automatically. Incorrect serverURL causes "no Route matched with those values" errors.
  */
 
 import * as vscode from 'vscode';
@@ -107,9 +72,6 @@ export class MistralClient {
 
   /**
    * Create a new Mistral SDK client instance
-   *
-   * @param apiKey The API key (Mistral or Codestral)
-   * @returns Configured Mistral client
    */
   private createMistralClient(apiKey: string): Mistral {
     const serverURL = this.config.apiBaseUrl;
@@ -160,8 +122,6 @@ export class MistralClient {
 
   /**
    * Initialize or retrieve the Mistral client singleton
-   *
-   * @throws MistralClientError if API key is not available
    */
   private async getClient(): Promise<Mistral> {
     if (this.client) {
@@ -184,18 +144,7 @@ export class MistralClient {
   /**
    * Generate a cache key for a completion request
    *
-   * Uses MD5 hash to create a unique key based on:
-   * - prefix text
-   * - suffix text
-   * - model
-   * - maxTokens
-   * - temperature
-   * - language ID (when language-aware parameters are enabled)
-   *
-   * @param prefix The prefix text
-   * @param suffix The suffix text (optional)
-   * @param languageId The language identifier (optional)
-   * @returns MD5 hash string
+   * Uses MD5 hash to create a unique key based on prefix, suffix, model, maxTokens, temperature, and language ID.
    */
   private generateCacheKey(
     prefix: string,
@@ -209,12 +158,7 @@ export class MistralClient {
   /**
    * Get stop sequences for completion generation
    *
-   * These sequences prevent overly long completions by stopping when
-   * common code block delimiters are encountered. Uses language-aware
-   * sequences when language-aware parameters are enabled.
-   *
-   * @param languageId The language identifier (optional)
-   * @returns Array of stop sequences
+   * Prevents overly long completions by stopping at common code block delimiters.
    */
   private getStopSequences(languageId?: string): string[] {
     if (languageId && this.config.languageAwareParametersEnabled) {
@@ -225,15 +169,6 @@ export class MistralClient {
     return ['\n\n', '```', '"""', "'''"];
   }
 
-  /**
-   * Get language-aware temperature value
-   *
-   * Returns language-specific temperature when language-aware parameters
-   * are enabled, otherwise returns the configured temperature.
-   *
-   * @param languageId The language identifier (optional)
-   * @returns Temperature value
-   */
   private getTemperature(languageId?: string): number {
     if (languageId && this.config.languageAwareParametersEnabled) {
       const params = getLanguageParameters(languageId);
@@ -242,15 +177,6 @@ export class MistralClient {
     return this.config.temperature;
   }
 
-  /**
-   * Get language-aware maxTokens value
-   *
-   * Returns language-specific maxTokens when language-aware parameters
-   * are enabled, otherwise returns the configured maxTokens.
-   *
-   * @param languageId The language identifier (optional)
-   * @returns MaxTokens value
-   */
   private getMaxTokens(languageId?: string): number {
     if (languageId && this.config.languageAwareParametersEnabled) {
       const params = getLanguageParameters(languageId);
@@ -261,9 +187,6 @@ export class MistralClient {
 
   /**
    * Extract text content from a response (handles both string and ContentChunk[] formats)
-   *
-   * @param content The content from the API response
-   * @returns Extracted text as a string
    */
   private extractContent(content: unknown): string {
     if (!content) {
@@ -296,15 +219,6 @@ export class MistralClient {
 
   /**
    * Get a non-streaming FIM completion from Mistral's Codestral API
-   *
-   * @param prefix The prefix text before the cursor
-   * @param suffix The suffix text after the cursor (optional)
-   * @param token Optional cancellation token to abort the request
-   * @param systemPrompt Optional system prompt for prompt engineering
-   * @param languageId The language identifier for language-aware parameters (optional)
-   * @param temperature Optional temperature override (for multiple candidates)
-   * @returns Promise resolving to the completion text, or null if no completion
-   * @throws MistralClientError if the request fails
    */
   async getCompletion(
     prefix: string,
@@ -455,17 +369,7 @@ export class MistralClient {
   /**
    * Get multiple completion candidates with slight temperature variations
    *
-   * Requests multiple completions from the API with different temperatures
-   * to generate diverse candidates for quality filtering and ranking.
-   *
-   * @param prefix The prefix text before the cursor
-   * @param suffix The suffix text after the cursor (optional)
-   * @param numCandidates Number of candidates to generate (1-5)
-   * @param token Optional cancellation token to abort the requests
-   * @param systemPrompt Optional system prompt for prompt engineering
-   * @param languageId The language identifier for language-aware parameters (optional)
-   * @returns Promise resolving to array of completion texts (may contain nulls)
-   * @throws MistralClientError if all requests fail
+   * Requests multiple completions with different temperatures for quality filtering and ranking.
    */
   async getMultipleCompletions(
     prefix: string,
@@ -547,16 +451,7 @@ export class MistralClient {
   /**
    * Get a streaming FIM completion from Mistral's Codestral API
    *
-   * Yields each chunk of the completion as it arrives from the API.
-   * Does not use caching for streaming responses.
-   *
-   * @param prefix The prefix text before the cursor
-   * @param suffix The suffix text after the cursor (optional)
-   * @param token Optional cancellation token to abort the request
-   * @param systemPrompt Optional system prompt for prompt engineering
-   * @param languageId The language identifier for language-aware parameters (optional)
-   * @returns Async generator yielding completion text chunks
-   * @throws MistralClientError if the request fails
+   * Yields chunks as they arrive. Does not use caching.
    */
   async *getStreamingCompletion(
     prefix: string,
@@ -698,9 +593,6 @@ export class MistralClient {
    * Handle API errors and convert them to MistralClientError
    *
    * Provides user-friendly error messages for common error scenarios.
-   *
-   * @param error The error to handle
-   * @throws MistralClientError with user-friendly message
    */
   private handleError(error: unknown): MistralClientError {
     // Check for Mistral SDK errors first
@@ -832,11 +724,6 @@ export class MistralClient {
     );
   }
 
-  /**
-   * Get error type for performance monitoring
-   * @param error The error object
-   * @returns Error type string for categorization
-   */
   private getErrorType(error: unknown): string {
     if (error instanceof MistralClientError) {
       return error.code;
@@ -896,23 +783,10 @@ export class MistralClient {
     return 'UNKNOWN_ERROR';
   }
 
-  /**
-   * Reset the client instance (e.g., after API key change)
-   *
-   * This clears the cached Mistral client and forces re-initialization
-   * on the next request.
-   */
   resetClient(): void {
     this.client = null;
   }
 
-  /**
-   * Check if the client is ready to make requests
-   *
-   * Verifies that an API key is available and the client can be initialized.
-   *
-   * @returns Promise resolving to true if ready, false otherwise
-   */
   async isReady(): Promise<boolean> {
     try {
       await this.getClient();
@@ -922,21 +796,10 @@ export class MistralClient {
     }
   }
 
-  /**
-   * Clear all cached completions
-   *
-   * This removes all entries from the cache, forcing subsequent requests
-   * to fetch fresh data from the API.
-   */
   clearCache(): void {
     this.cache.clear();
   }
 
-  /**
-   * Get cache statistics
-   *
-   * @returns Cache statistics object, or undefined if cache is disabled
-   */
   getCacheStats():
     | {
         size: number;
@@ -951,14 +814,6 @@ export class MistralClient {
     return this.cache.getStats();
   }
 
-  /**
-   * Update configuration settings
-   *
-   * Called when user changes configuration settings.
-   * Reinitializes cache with new TTL and resets client if needed.
-   *
-   * @param config The new configuration
-   */
   updateConfig(config: PredicteConfig): void {
     this.config = config;
 
