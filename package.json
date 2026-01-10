@@ -3,7 +3,7 @@
   "displayName": "Predicte",
   "description": "Lightweight AI-powered autocomplete using Mistral's Codestral model",
   "version": "1.0.0",
-  "publisher": "GaSatrya",
+  "publisher": "predicte",
   "license": "MIT",
   "repository": {
     "type": "git",
