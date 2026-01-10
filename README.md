@@ -11,6 +11,7 @@
 
 <div align="center">
 
+![CI](https://github.com/gasatrya/predicte/actions/workflows/ci.yml/badge.svg)
 ![Version](https://img.shields.io/visual-studio-marketplace/v/predicte.predicte)
 ![Installs](https://img.shields.io/visual-studio-marketplace/i/predicte.predicte)
 ![License](https://img.shields.io/github/license/gasatrya/predicte)
@@ -18,6 +19,8 @@
 </div>
 
 **Predicte** brings the power of state-of-the-art AI to your editor without the bloat. Built on Mistral's **Codestral** model, it provides fast, context-aware code completion that runs efficiently on your machine.
+
+_This extension is for developers who don't need an AI chat interface but still want the magic of AI autocomplete._
 
 ## ✨ Features
 
