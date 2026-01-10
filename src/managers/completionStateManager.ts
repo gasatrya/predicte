@@ -14,8 +14,6 @@
 import * as vscode from 'vscode';
 import type { CompletionState } from '../types/completion';
 
-export type { CompletionState };
-
 /**
  * Completion State Manager
  *

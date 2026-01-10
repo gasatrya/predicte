@@ -12,8 +12,6 @@ import type {
   ScoreDetails,
 } from '../types/code';
 
-export type { LanguageParameters, CompletionCandidate, ScoreDetails };
-
 /**
  * Get language-specific model parameters for completion generation
  *

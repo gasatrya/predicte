@@ -13,8 +13,6 @@ import type {
   PredicteConfigValues,
 } from '../types/config';
 
-export type { CodestralModel, ApiBaseUrl, PredicteConfigValues };
-
 /**
  * Predicte configuration manager class
  */

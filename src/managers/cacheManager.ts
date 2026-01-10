@@ -7,8 +7,6 @@
 
 import type { CacheEntry } from '../types/metrics';
 
-export type { CacheEntry };
-
 export class CacheManager<K, V> {
   private cache = new Map<K, CacheEntry<V>>();
   private maxSize: number;

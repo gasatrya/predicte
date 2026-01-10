@@ -18,8 +18,6 @@
 import { Logger } from '../utils/logger';
 import type { MetricsSummary } from '../types/metrics';
 
-export type { MetricsSummary };
-
 /**
  * Internal performance metrics data structure
  */

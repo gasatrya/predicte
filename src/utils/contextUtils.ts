@@ -11,8 +11,6 @@ import type {
   FormattedCompletionContext,
 } from '../types/completion';
 
-export type { CodeContext, FormattedCompletionContext };
-
 /**
  * Extract context from a document at a given position
  *
