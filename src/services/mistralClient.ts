@@ -29,6 +29,7 @@ import type { Logger } from '../utils/logger';
 import type { PerformanceMonitor } from '../managers/performanceMetrics';
 import * as crypto from 'node:crypto';
 import { getLanguageParameters } from '../utils/languageConfig';
+import { PREDICTE_CONSTANTS } from '../constants';
 
 /**
  * Error types for Mistral client operations
@@ -67,7 +68,7 @@ export class MistralClient {
     this.secretStorage = secretStorage;
     this.logger = logger;
     this.performanceMonitor = performanceMonitor;
-    this.cache = new CacheManager(100, config.cacheTTL);
+    this.cache = new CacheManager(100, PREDICTE_CONSTANTS.CACHE_TTL);
   }
 
   /**
@@ -106,9 +107,9 @@ export class MistralClient {
     return new Mistral({
       apiKey,
       serverURL,
-      timeoutMs: this.config.requestTimeout,
+      timeoutMs: PREDICTE_CONSTANTS.REQUEST_TIMEOUT,
       retryConfig: {
-        strategy: this.config.enableStreaming ? 'none' : 'backoff',
+        strategy: PREDICTE_CONSTANTS.ENABLE_STREAMING ? 'none' : 'backoff',
         backoff: {
           initialInterval: 500,
           maxInterval: 10000,
@@ -151,7 +152,7 @@ export class MistralClient {
     suffix?: string,
     languageId?: string,
   ): string {
-    const keyString = `${prefix}:${suffix ?? ''}:${this.config.model}:${this.config.maxTokens}:${this.config.temperature}:${languageId ?? 'default'}`;
+    const keyString = `${prefix}:${suffix ?? ''}:${PREDICTE_CONSTANTS.MODEL}:${PREDICTE_CONSTANTS.MAX_TOKENS}:${PREDICTE_CONSTANTS.TEMPERATURE}:${languageId ?? 'default'}`;
     return crypto.createHash('md5').update(keyString).digest('hex');
   }
 
@@ -161,7 +162,7 @@ export class MistralClient {
    * Prevents overly long completions by stopping at common code block delimiters.
    */
   private getStopSequences(languageId?: string): string[] {
-    if (languageId && this.config.languageAwareParametersEnabled) {
+    if (languageId) {
       const params = getLanguageParameters(languageId);
       return params.stopSequences;
     }
@@ -170,19 +171,19 @@ export class MistralClient {
   }
 
   private getTemperature(languageId?: string): number {
-    if (languageId && this.config.languageAwareParametersEnabled) {
+    if (languageId) {
       const params = getLanguageParameters(languageId);
       return params.temperature;
     }
-    return this.config.temperature;
+    return PREDICTE_CONSTANTS.TEMPERATURE;
   }
 
   private getMaxTokens(languageId?: string): number {
-    if (languageId && this.config.languageAwareParametersEnabled) {
+    if (languageId) {
       const params = getLanguageParameters(languageId);
       return params.maxTokens;
     }
-    return this.config.maxTokens;
+    return PREDICTE_CONSTANTS.MAX_TOKENS;
   }
 
   /**
@@ -242,7 +243,7 @@ export class MistralClient {
     const stopSequences = this.getStopSequences(languageId);
 
     // Check cache first if enabled
-    if (this.config.cacheEnabled) {
+    if (PREDICTE_CONSTANTS.CACHE_ENABLED) {
       const cacheKey = this.generateCacheKey(prefix, suffix, languageId);
       const cached = this.cache.get(cacheKey);
       if (cached !== undefined) {
@@ -265,7 +266,7 @@ export class MistralClient {
     }
 
     const request: FIMCompletionRequest = {
-      model: this.config.model,
+      model: PREDICTE_CONSTANTS.MODEL,
       prompt: prefix,
       suffix: suffix ?? null,
       maxTokens,
@@ -317,9 +318,9 @@ export class MistralClient {
       const result = content || null;
 
       // Cache the result if enabled and we got a result
-      if (this.config.cacheEnabled && result !== null) {
+      if (PREDICTE_CONSTANTS.CACHE_ENABLED && result !== null) {
         const cacheKey = this.generateCacheKey(prefix, suffix, languageId);
-        this.cache.set(cacheKey, result, this.config.cacheTTL);
+        this.cache.set(cacheKey, result, PREDICTE_CONSTANTS.CACHE_TTL);
       }
 
       // Record success metrics
@@ -400,7 +401,7 @@ export class MistralClient {
     // Log the request details for multiple completions
     this.logger.debug(
       `Making FIM multiple completions request: ${JSON.stringify({
-        model: this.config.model,
+        model: PREDICTE_CONSTANTS.MODEL,
         promptLength: prefix?.length ?? 0,
         suffixLength: suffix?.length ?? 0,
         maxTokens: this.getMaxTokens(languageId),
@@ -480,7 +481,7 @@ export class MistralClient {
     const stopSequences = this.getStopSequences(languageId);
 
     const request: FIMCompletionStreamRequest = {
-      model: this.config.model,
+      model: PREDICTE_CONSTANTS.MODEL,
       prompt: prefix,
       suffix: suffix ?? null,
       maxTokens,
@@ -808,7 +809,7 @@ export class MistralClient {
         utilization: number;
       }
     | undefined {
-    if (!this.config.cacheEnabled) {
+    if (!PREDICTE_CONSTANTS.CACHE_ENABLED) {
       return undefined;
     }
     return this.cache.getStats();
@@ -817,8 +818,8 @@ export class MistralClient {
   updateConfig(config: PredicteConfig): void {
     this.config = config;
 
-    // Reinitialize cache with new TTL if changed
-    if (!config.cacheEnabled) {
+    // Clear cache if enabled
+    if (PREDICTE_CONSTANTS.CACHE_ENABLED) {
       this.cache.clear();
     }
 

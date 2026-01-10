@@ -58,12 +58,13 @@ _This extension is for developers who don't need an AI chat interface but still 
 
 ## 🛠️ Configuration
 
-| Setting                           | Default            | Description                               |
-| :-------------------------------- | :----------------- | :---------------------------------------- |
-| `predicte.model`                  | `codestral-latest` | Choose between speed and power            |
-| `predicte.maxTokens`              | `100`              | Length of generated code                  |
-| `predicte.debounceDelay`          | `150`              | ms to wait before requesting              |
-| `predicte.enhancedContextEnabled` | `true`             | Analyze imports/types for better accuracy |
+| Setting                      | Default                | Description                           |
+| :--------------------------- | :--------------------- | :------------------------------------ |
+| `predicte.enabled`           | `true`                 | Enable/disable Predicte autocomplete  |
+| `predicte.apiBaseUrl`        | `codestral.mistral.ai` | API base URL                          |
+| `predicte.enableKeybindings` | `true`                 | Enable keyboard shortcuts (Tab, etc.) |
+| `predicte.enableStatusBar`   | `true`                 | Show status bar item                  |
+| `predicte.debugMode`         | `false`                | Enable detailed logging               |
 
 ## 🤝 Contributing
 

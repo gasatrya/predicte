@@ -74,116 +74,8 @@
             "Use regular Mistral API (for Mistral API keys)",
             "Use Codestral API (recommended, for Codestral-specific API keys)"
           ],
-          "description": "API base URL - use codestral.mistral.ai for Codestral API keys, api.mistral.ai for regular Mistral API keys. Do NOT include /v1 in the URL.",
+          "description": "API base URL - use codestral.mistral.ai for Codestral API keys, api.mistral.ai for regular Mistral API keys.",
           "order": 2
-        },
-        "predicte.model": {
-          "type": "string",
-          "enum": [
-            "codestral-latest",
-            "codestral-22b",
-            "codestral-2404"
-          ],
-          "default": "codestral-latest",
-          "enumDescriptions": [
-            "Latest Codestral model (best quality)",
-            "Smaller, faster Codestral model",
-            "April 2024 version"
-          ],
-          "description": "Codestral model to use",
-          "order": 3
-        },
-        "predicte.maxTokens": {
-          "type": "number",
-          "default": 100,
-          "minimum": 1,
-          "maximum": 500,
-          "description": "Maximum completion tokens",
-          "order": 4
-        },
-        "predicte.temperature": {
-          "type": "number",
-          "default": 0.1,
-          "minimum": 0,
-          "maximum": 1,
-          "description": "Sampling temperature (lower = more deterministic)",
-          "order": 5
-        },
-        "predicte.debounceDelay": {
-          "type": "number",
-          "default": 150,
-          "minimum": 50,
-          "maximum": 1000,
-          "description": "Delay before triggering autocomplete (ms). Based on Zed's Codestral timing research, 150ms provides optimal balance between responsiveness and rate limiting.",
-          "order": 6
-        },
-        "predicte.contextLines": {
-          "type": "number",
-          "default": 50,
-          "minimum": 5,
-          "maximum": 100,
-          "description": "Number of context lines to include",
-          "order": 7
-        },
-        "predicte.enhancedContextEnabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable enhanced context extraction (imports, function/class definitions, type definitions)",
-          "order": 8
-        },
-        "predicte.enableStreaming": {
-          "type": "boolean",
-          "default": true,
-          "description": "Use streaming for completions",
-          "order": 8
-        },
-        "predicte.cacheEnabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable completion caching",
-          "order": 9
-        },
-        "predicte.cacheTTL": {
-          "type": "number",
-          "default": 60000,
-          "minimum": 1000,
-          "maximum": 600000,
-          "description": "Cache TTL in milliseconds",
-          "order": 10
-        },
-        "predicte.requestTimeout": {
-          "type": "number",
-          "default": 30000,
-          "minimum": 5000,
-          "maximum": 120000,
-          "description": "Request timeout in milliseconds",
-          "order": 11
-        },
-        "predicte.promptEngineeringEnabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable prompt engineering with language-specific system messages for better completion quality",
-          "order": 12
-        },
-        "predicte.languageAwareParametersEnabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable language-specific model parameters (temperature, maxTokens, stop sequences) optimized for each programming language",
-          "order": 13
-        },
-        "predicte.qualityFilteringEnabled": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable quality filtering and ranking for completion candidates (requests multiple completions and selects the best one)",
-          "order": 14
-        },
-        "predicte.numCandidates": {
-          "type": "number",
-          "default": 3,
-          "minimum": 1,
-          "maximum": 5,
-          "description": "Number of completion candidates to request when quality filtering is enabled (more candidates = better quality but slower)",
-          "order": 15
         },
         "predicte.debugMode": {
           "type": "boolean",
@@ -197,56 +89,29 @@
           "description": "Enable keyboard shortcuts for multi-granularity completion acceptance",
           "order": 17
         },
-        "predicte.enablePerformanceMonitoring": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable performance monitoring and metrics collection",
-          "order": 18
-        },
         "predicte.enableStatusBar": {
           "type": "boolean",
           "default": true,
           "description": "Show Predicte status bar items (toggle and loading indicator)",
           "order": 19
-        },
-        "predicte.enableConflictResolution": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable conflict resolution between LSP and AI completions",
-          "order": 20
-        },
-        "predicte.hideWhenLSPActive": {
-          "type": "boolean",
-          "default": true,
-          "description": "Hide AI completions when LSP menu is visible",
-          "order": 21
-        },
-        "predicte.modifierKeyForPreview": {
-          "type": "string",
-          "enum": [
-            "alt",
-            "ctrl",
-            "none"
-          ],
-          "default": "alt",
-          "description": "Modifier key to preview AI completions when LSP menu is visible",
-          "order": 22
-        },
-        "predicte.enableContinuationDetection": {
-          "type": "boolean",
-          "default": true,
-          "description": "Automatically detect incomplete code and trigger follow-up completions",
-          "order": 23
-        },
-        "predicte.continuationDelay": {
-          "type": "number",
-          "default": 100,
-          "minimum": 50,
-          "maximum": 500,
-          "description": "Delay in milliseconds before triggering continuation detection",
-          "order": 24
         }
       }
+    },
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "predicte.acceptWord",
+          "when": "false"
+        },
+        {
+          "command": "predicte.acceptLine",
+          "when": "false"
+        },
+        {
+          "command": "predicte.acceptFull",
+          "when": "false"
+        }
+      ]
     },
     "commands": [
       {
@@ -294,29 +159,14 @@
         "when": "editorHasInlineCompletion && config.predicte.enableKeybindings != false && !editorHasCompletionSuggestions"
       },
       {
-        "command": "predicte.acceptFull",
-        "key": "tab",
-        "when": "editorHasInlineCompletion && editorHasCompletionSuggestions && altKey"
-      },
-      {
         "command": "predicte.acceptWord",
         "key": "ctrl+right",
         "when": "editorHasInlineCompletion && config.predicte.enableKeybindings != false && !editorHasCompletionSuggestions"
       },
       {
-        "command": "predicte.acceptWord",
-        "key": "ctrl+right",
-        "when": "editorHasInlineCompletion && editorHasCompletionSuggestions && altKey"
-      },
-      {
         "command": "predicte.acceptLine",
         "key": "ctrl+down",
         "when": "editorHasInlineCompletion && config.predicte.enableKeybindings != false && !editorHasCompletionSuggestions"
-      },
-      {
-        "command": "predicte.acceptLine",
-        "key": "ctrl+down",
-        "when": "editorHasInlineCompletion && editorHasCompletionSuggestions && altKey"
       }
     ]
   },
@@ -332,8 +182,8 @@
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "check-types": "tsc --noEmit",
     "test": "vscode-test",
-    "lint": "eslint src --ext ts",
-    "lint:fix": "eslint src --ext ts --fix",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "prepare": "husky"
@@ -354,7 +204,6 @@
     "typescript-eslint": "^8.52.0"
   },
   "dependencies": {
-    "@mistralai/mistralai": "^1.11.0",
-    "zod": "^4.3.5"
+    "@mistralai/mistralai": "^1.11.0"
   }
 }

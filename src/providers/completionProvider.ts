@@ -12,6 +12,7 @@ import type { PredicteSecretStorage } from '../services/secretStorage';
 import { MistralClient, MistralClientError } from '../services/mistralClient';
 import { Debouncer } from '../utils/debounce';
 import { Logger } from '../utils/logger';
+import { PREDICTE_CONSTANTS } from '../constants';
 import {
   extractContext,
   shouldTrigger as shouldTriggerInternal,
@@ -63,7 +64,9 @@ export class PredicteCompletionProvider
       logger,
       performanceMonitor,
     );
-    this.debouncer = new Debouncer<string | null>(config.debounceDelay);
+    this.debouncer = new Debouncer<string | null>(
+      PREDICTE_CONSTANTS.DEBOUNCE_DELAY,
+    );
     this.completionStateManager = new CompletionStateManager();
 
     // Watch for configuration changes
@@ -112,18 +115,14 @@ export class PredicteCompletionProvider
     }
 
     // Check for conflict resolution with LSP
-    if (this.config.enableConflictResolution) {
-      const shouldHideForLSP = this.shouldHideForLSP(context);
-      if (shouldHideForLSP) {
-        const modifierPressed = this.isModifierPressed();
-        if (!modifierPressed) {
-          this.logger.debug('Hiding AI completion (LSP active, no modifier)');
-          return null;
-        }
-        this.logger.debug(
-          'Showing AI completion (LSP active, modifier pressed)',
-        );
+    const shouldHideForLSP = this.shouldHideForLSP(context);
+    if (shouldHideForLSP) {
+      const modifierPressed = this.isModifierPressed();
+      if (!modifierPressed) {
+        this.logger.debug('Hiding AI completion (LSP active, no modifier)');
+        return null;
       }
+      this.logger.debug('Showing AI completion (LSP active, modifier pressed)');
     }
 
     // Check if should trigger
@@ -154,34 +153,22 @@ export class PredicteCompletionProvider
         const codeContext = extractContext(
           document,
           position,
-          this.config.contextLines,
+          PREDICTE_CONSTANTS.CONTEXT_LINES,
         );
 
-        // Format context with prompt engineering if enabled
-        const formattedContext = formatContextWithPrompt(
-          codeContext,
-          this.config.promptEngineeringEnabled,
-        );
+        // Format context with prompt engineering (always enabled)
+        const formattedContext = formatContextWithPrompt(codeContext, true);
 
         let prefix = '';
         let suffix = '';
-        let systemPrompt: string | undefined;
+        // System prompt is always used
+        const systemPrompt: string | undefined = formattedContext.systemPrompt;
 
-        if (this.config.enhancedContextEnabled) {
-          this.logger.debug('Using enhanced context building');
-          const enhancedContext = buildEnhancedContext(codeContext);
-          prefix = truncateContext(enhancedContext.prefix);
-          suffix = truncateContext(enhancedContext.suffix);
-        } else {
-          // Use basic context
-          prefix = truncateContext(formattedContext.prefix);
-          suffix = truncateContext(formattedContext.suffix);
-        }
-
-        // Set system prompt if prompt engineering is enabled
-        if (this.config.promptEngineeringEnabled) {
-          systemPrompt = formattedContext.systemPrompt;
-        }
+        // enhancedContextEnabled is now always true
+        this.logger.debug('Using enhanced context building');
+        const enhancedContext = buildEnhancedContext(codeContext);
+        prefix = truncateContext(enhancedContext.prefix);
+        suffix = truncateContext(enhancedContext.suffix);
 
         this.logger.debug(
           `Requesting completion for ${document.languageId} at line ${position.line}`,
@@ -203,11 +190,11 @@ export class PredicteCompletionProvider
         // Quality filtering doesn't work well with streaming
         // Fall back to single completion if streaming is enabled
         if (
-          this.config.enableStreaming ||
-          !this.config.qualityFilteringEnabled
+          PREDICTE_CONSTANTS.ENABLE_STREAMING
+          // Quality filtering enabled by default, but we skip it if streaming is on
         ) {
           // Use single completion (streaming or non-streaming)
-          if (this.config.enableStreaming) {
+          if (PREDICTE_CONSTANTS.ENABLE_STREAMING) {
             this.logger.debug('Using streaming completion');
             result = await this.getStreamingCompletion(
               prefix,
@@ -229,12 +216,12 @@ export class PredicteCompletionProvider
         } else {
           // Use quality filtering with multiple candidates
           this.logger.debug(
-            `Using quality filtering with ${this.config.numCandidates} candidates`,
+            `Using quality filtering with ${PREDICTE_CONSTANTS.NUM_CANDIDATES} candidates`,
           );
           const candidates = await this.mistralClient.getMultipleCompletions(
             prefix,
             suffix,
-            this.config.numCandidates,
+            PREDICTE_CONSTANTS.NUM_CANDIDATES,
             token,
             systemPrompt,
             document.languageId,
@@ -302,7 +289,10 @@ export class PredicteCompletionProvider
         if (completion.includes(suffixToCheck)) {
           // Verify it's a bracket/delimiter type character that's likely to duplicate
           const firstChar = suffixToCheck[0];
-          if (')]}>'.includes(firstChar) || /^[)\]}>]+$/.test(suffixToCheck)) {
+          if (
+            ')]}>;'.includes(firstChar) ||
+            /^[)\]}>;]+$/.test(suffixToCheck)
+          ) {
             charsToReplace = len;
             break;
           }
@@ -398,7 +388,7 @@ export class PredicteCompletionProvider
     this.logger.debug('Configuration changed, updating completion provider');
 
     // Update debouncer delay if changed
-    this.debouncer.setDelay(this.config.debounceDelay);
+    this.debouncer.setDelay(PREDICTE_CONSTANTS.DEBOUNCE_DELAY);
 
     // Update Mistral client configuration
     this.mistralClient.updateConfig(this.config);
@@ -533,13 +523,8 @@ export class PredicteCompletionProvider
   }
 
   private shouldHideForLSP(context: vscode.InlineCompletionContext): boolean {
-    if (!this.config.hideWhenLSPActive) {
-      return false;
-    }
-
-    // VS Code sets triggerKind to Invoke when user manually triggers suggestions
-    // This usually means LSP menu is visible or user explicitly requested completion
-    return context.triggerKind === vscode.InlineCompletionTriggerKind.Invoke;
+    // Check if there is a selected completion item (suggestion widget is open)
+    return context.selectedCompletionInfo !== undefined;
   }
 
   private isModifierPressed(): boolean {
@@ -561,15 +546,12 @@ export class PredicteCompletionProvider
       clearTimeout(this.continuationTimer);
     }
 
-    // Don't schedule if continuation detection is disabled
-    if (!this.config.enableContinuationDetection) {
-      return;
-    }
+    // Continuation detection is always enabled
 
     // Schedule continuation check
     this.continuationTimer = setTimeout(() => {
       void this.checkForContinuation(document, position, token);
-    }, this.config.continuationDelay);
+    }, PREDICTE_CONSTANTS.CONTINUATION_DELAY);
   }
 
   private async checkForContinuation(

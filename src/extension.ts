@@ -12,6 +12,7 @@ import { PredicteCompletionProvider } from './providers/completionProvider';
 import { PerformanceMonitor } from './managers/performanceMetrics';
 import { StatusBarController } from './providers/statusBarController';
 import { Logger, LogLevel } from './utils/logger';
+import { PREDICTE_CONSTANTS } from './constants';
 import {
   findNextWordBoundary,
   findNextLineBoundary,
@@ -44,7 +45,7 @@ export function activate(context: vscode.ExtensionContext): void {
   logger = new Logger('Predicte', logLevel);
 
   // Initialize performance monitor if enabled
-  if (config.enablePerformanceMonitoring) {
+  if (PREDICTE_CONSTANTS.ENABLE_PERFORMANCE_MONITORING) {
     performanceMonitor = new PerformanceMonitor(logger);
   }
 
@@ -138,7 +139,7 @@ export function activate(context: vscode.ExtensionContext): void {
     'predicte.showStatus',
     async () => {
       const enabled = config.enabled;
-      const model = config.model;
+      const model = PREDICTE_CONSTANTS.MODEL;
       const hasKey = await secretStorage.hasApiKey();
 
       const message = `
