@@ -278,10 +278,42 @@ export class PredicteCompletionProvider
       // Track completion in state manager for interpolation
       this.completionStateManager.setCompletion(completion, document, position);
 
-      // Create inline completion item with explicit range
+      // Calculate replacement range to avoid duplicate characters
+      // Check what text exists after the cursor position
+      const lineText = document.lineAt(position.line).text;
+      const textAfterCursor = lineText.substring(position.character);
+
+      // Find how many leading characters in the suffix should be replaced
+      // This prevents duplicates like "useState(false)]" when "]" already exists
+      // Algorithm: Check if the textAfterCursor (or a prefix of it) appears in the
+      // completion at a position that would cause duplication when inserted.
+      let charsToReplace = 0;
+
+      // Get the first few characters after cursor (typically closing brackets)
+      const maxCheck = Math.min(textAfterCursor.length, 5);
+      for (let len = maxCheck; len > 0; len--) {
+        const suffixToCheck = textAfterCursor.substring(0, len);
+        // Skip if it's just whitespace
+        if (suffixToCheck.trim().length === 0) {
+          continue;
+        }
+        // Check if this suffix appears in the completion
+        // We want to replace it only if it exists in completion and would cause duplicate
+        if (completion.includes(suffixToCheck)) {
+          // Verify it's a bracket/delimiter type character that's likely to duplicate
+          const firstChar = suffixToCheck[0];
+          if (')]}>'.includes(firstChar) || /^[)\]}>]+$/.test(suffixToCheck)) {
+            charsToReplace = len;
+            break;
+          }
+        }
+      }
+
+      // Create range that replaces any duplicate trailing characters
+      const endPosition = position.translate(0, charsToReplace);
       const item = new vscode.InlineCompletionItem(
         completion,
-        new vscode.Range(position, position),
+        new vscode.Range(position, endPosition),
       );
 
       // Enable bracket pair completion for function signatures and code blocks
