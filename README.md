@@ -12,8 +12,8 @@
 <div align="center">
 
 ![CI](https://github.com/gasatrya/predicte/actions/workflows/ci.yml/badge.svg)
-![Version](https://img.shields.io/visual-studio-marketplace/v/predicte.predicte)
-![Installs](https://img.shields.io/visual-studio-marketplace/i/predicte.predicte)
+![Version](https://img.shields.io/visual-studio-marketplace/v/GaSatrya.predicte)
+![Installs](https://img.shields.io/visual-studio-marketplace/i/GaSatrya.predicte)
 ![License](https://img.shields.io/github/license/gasatrya/predicte)
 
 </div>

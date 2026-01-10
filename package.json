@@ -3,7 +3,7 @@
   "displayName": "Predicte",
   "description": "Lightweight AI-powered autocomplete using Mistral's Codestral model",
   "version": "1.0.0",
-  "publisher": "predicte",
+  "publisher": "GaSatrya",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -15,7 +15,7 @@
   "homepage": "https://github.com/gasatrya/predicte#readme",
   "icon": "images/icon.png",
   "engines": {
-    "vscode": "^1.90.0"
+    "vscode": "^1.108.1"
   },
   "categories": [
     "Machine Learning",
@@ -191,7 +191,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@types/node": "^25.0.5",
-    "@types/vscode": "^1.108.0",
+    "@types/vscode": "^1.108.1",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
     "esbuild": "^0.27.2",
