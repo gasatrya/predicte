@@ -49,11 +49,9 @@
 
 ## ⌨️ Shortcuts
 
-| Key          | Action                     |
-| ------------ | -------------------------- |
-| `Tab`        | Accept **Full** Completion |
-| `Ctrl+Right` | Accept **Next Word**       |
-| `Ctrl+Down`  | Accept **Next Line**       |
+| Key   | Action                     |
+| ----- | -------------------------- |
+| `Tab` | Accept **Full** Completion |
 
 ## 🛠️ Configuration
 
