@@ -23,8 +23,8 @@ import {
   sanitizeCompletion,
   fixHtmlJsxSpacing,
   isValidCompletion,
-  getBestCompletion,
-} from '../utils/codeUtils';
+} from '../utils/completionSanitizer';
+import { getBestCompletion } from '../utils/completionScorer';
 import { CompletionStateManager } from '../managers/completionStateManager';
 import type { PerformanceMonitor } from '../managers/performanceMetrics';
 import type { StatusBarController } from './statusBarController';

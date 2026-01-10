@@ -28,7 +28,7 @@ import { CacheManager } from '../managers/cacheManager';
 import type { Logger } from '../utils/logger';
 import type { PerformanceMonitor } from '../managers/performanceMetrics';
 import * as crypto from 'node:crypto';
-import { getLanguageParameters } from '../utils/codeUtils';
+import { getLanguageParameters } from '../utils/languageConfig';
 
 /**
  * Error types for Mistral client operations

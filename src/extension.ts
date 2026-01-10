@@ -16,7 +16,7 @@ import {
   findNextWordBoundary,
   findNextLineBoundary,
   applyPartialCompletion,
-} from './utils/codeUtils';
+} from './utils/partialCompletion';
 
 /**
  * Module-level instances
