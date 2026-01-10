@@ -2,9 +2,18 @@
   "name": "predicte",
   "displayName": "Predicte",
   "description": "Lightweight AI-powered autocomplete using Mistral's Codestral model",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "publisher": "predicte",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gasatrya/predicte.git"
+  },
+  "bugs": {
+    "url": "https://github.com/gasatrya/predicte/issues"
+  },
+  "homepage": "https://github.com/gasatrya/predicte#readme",
+  "icon": "images/icon.png",
   "engines": {
     "vscode": "^1.90.0"
   },

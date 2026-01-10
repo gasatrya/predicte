@@ -1,65 +1,73 @@
 # Predicte
 
-![CI](https://github.com/predicte/predicte/actions/workflows/ci.yml/badge.svg)
-![Release](https://img.shields.io/github/release/predicte/predicte.svg)
+<div align="center">
+  <img src="https://raw.githubusercontent.com/gasatrya/predicte/main/images/icon.png" alt="Predicte Icon" width="128" height="128" />
+  <h1>Predicte: AI Code Completion</h1>
+  <p>
+    <b>Lightweight, Fast, and Free AI Autocomplete for VS Code</b><br>
+    Powered by Mistral's Codestral Model
+  </p>
+</div>
 
-Lightweight AI-powered code autocomplete extension for VS Code using Mistral's Codestral model.
+<div align="center">
 
-> **Note**: This extension is still under active development.
+![Version](https://img.shields.io/visual-studio-marketplace/v/predicte.predicte)
+![Installs](https://img.shields.io/visual-studio-marketplace/i/predicte.predicte)
+![License](https://img.shields.io/github/license/gasatrya/predicte)
 
-## Features
+</div>
 
-- **Inline completions** - Fast, non-intrusive suggestions as you type
-- **Multiple models** - Support for codestral-latest, codestral-22b, and codestral-2404
-- **Smart caching** - LRU cache with configurable TTL to reduce API calls
-- **Streaming support** - Faster completions with streaming responses
-- **Secure storage** - API keys stored using VS Code's SecretStorage API
-- **10 configurable settings** - Fine-tuned control over behavior
+**Predicte** brings the power of state-of-the-art AI to your editor without the bloat. Built on Mistral's **Codestral** model, it provides fast, context-aware code completion that runs efficiently on your machine.
 
-## Installation
+## ✨ Features
 
-1. Clone and install:
+- **🚀 Blazing Fast**: Streaming responses for instant feedback.
+- **🧠 Context Aware**: Understands your imports, functions, and types for smarter suggestions.
+- **🔋 Efficient**: Intelligent LRU caching and debouncing to save API credits.
+- **🛡️ Secure**: Your API keys are stored safely using VS Code's native SecretStorage.
+- **⚙️ Configurable**: Fine-tune everything from model selection to debounce delay.
 
-   ```bash
-   git clone https://github.com/predicte/predicte.git
-   cd predicte
-   npm install
-   ```
+## 📦 Installation
 
-2. Build and run:
+**From VS Code Marketplace:** (Coming Soon)
 
-   ```bash
-   npm run compile
-   # Press F5 to launch VS Code Extension Development Host
-   ```
+1. Open **Extensions** sidebar (Ctrl+Shift+X).
+2. Search for `Predicte`.
+3. Click **Install**.
 
-3. Set your Mistral API key:
-   - Open Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`)
-   - Run `Predicte: Set API Key`
+**From Source:**
 
-## Configuration
+1. Clone the repo: `git clone https://github.com/gasatrya/predicte.git`
+2. Run `npm install`
+3. Press `F5` to debug.
 
-Key settings (search "Predicte" in VS Code settings):
+## 🚀 Getting Started
 
-| Setting                  | Default            | Description                   |
-| ------------------------ | ------------------ | ----------------------------- |
-| `predicte.model`         | `codestral-latest` | Codestral model to use        |
-| `predicte.maxTokens`     | `50`               | Max completion tokens (1-500) |
-| `predicte.debounceDelay` | `300`              | Delay before triggering (ms)  |
-| `predicte.cacheEnabled`  | `true`             | Enable caching                |
+1.  **Get an API Key**: Sign up at [Mistral AI](https://console.mistral.ai/) and get your API key (Codestral is currently free/beta).
+2.  **Set Key**: Open Command Palette (`Ctrl+Shift+P`) and run **Predicte: Set API Key**.
+3.  **Start Coding**: Open any supported file (JS, TS, Python, Go, etc.) and start typing!
 
-Full configuration list available in settings.
+## ⌨️ Shortcuts
 
-## Development
+| Key          | Action                     |
+| ------------ | -------------------------- |
+| `Tab`        | Accept **Full** Completion |
+| `Ctrl+Right` | Accept **Next Word**       |
+| `Ctrl+Down`  | Accept **Next Line**       |
 
-| Command           | Description          |
-| ----------------- | -------------------- |
-| `npm run compile` | Compile TypeScript   |
-| `npm run watch`   | Watch and recompile  |
-| `npm run package` | Build for production |
-| `npm run lint`    | Run ESLint           |
-| `npm run format`  | Format code          |
+## 🛠️ Configuration
 
-## License
+| Setting                           | Default            | Description                               |
+| :-------------------------------- | :----------------- | :---------------------------------------- |
+| `predicte.model`                  | `codestral-latest` | Choose between speed and power            |
+| `predicte.maxTokens`              | `100`              | Length of generated code                  |
+| `predicte.debounceDelay`          | `150`              | ms to wait before requesting              |
+| `predicte.enhancedContextEnabled` | `true`             | Analyze imports/types for better accuracy |
 
-MIT
+## 🤝 Contributing
+
+We love contributions! Please read our [Contributing Guidelines](CONTRIBUTING.md) to get started.
+
+## 📄 License
+
+MIT © [Predicte Team](https://github.com/gasatrya)
