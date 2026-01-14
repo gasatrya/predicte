@@ -32,17 +32,9 @@ _This extension is for developers who don't need an AI chat interface but still 
 
 ## 📦 Installation
 
-**From VS Code Marketplace:** (Coming Soon)
-
 1. Open **Extensions** sidebar (Ctrl+Shift+X).
 2. Search for `Predicte`.
 3. Click **Install**.
-
-**From Source:**
-
-1. Clone the repo: `git clone https://github.com/gasatrya/predicte.git`
-2. Run `npm install`
-3. Press `F5` to debug.
 
 ## 🚀 Getting Started
 
@@ -72,4 +64,4 @@ We love contributions! Please read our [Contributing Guidelines](CONTRIBUTING.md
 
 ## 📄 License
 
-MIT © [Predicte Team](https://github.com/gasatrya)
+MIT © [Ga Satrya](https://github.com/gasatrya)
