@@ -4,15 +4,62 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.mdx'
+      - '.github/ISSUE_TEMPLATE/**'
+      - 'LICENSE'
+      - 'CHANGELOG.md'
+      - 'CONTRIBUTING.md'
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.mdx'
+      - '.github/ISSUE_TEMPLATE/**'
+      - 'LICENSE'
+      - 'CHANGELOG.md'
+      - 'CONTRIBUTING.md'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
+  lint-typecheck:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Lint
+        run: npm run lint
+
+      - name: Type Check
+        run: npm run check-types
+
+      - name: Format Check
+        run: npm run format:check
+
+  test:
+    name: Test
+    needs: lint-typecheck
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: ${{ github.event_name == 'push' && fromJSON('["ubuntu-latest", "macos-latest", "windows-latest"]') || fromJSON('["ubuntu-latest"]') }}
+      fail-fast: false
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -22,20 +69,22 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Lint
-        run: npm run lint
-
-      - name: Run Tests (Linux)
+      - name: Setup Xvfb (Linux)
         if: runner.os == 'Linux'
         run: |
           /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
-          npm test
+        env:
+          DISPLAY: ':99.0'
+
+      - name: Run Tests (Linux)
+        if: runner.os == 'Linux'
+        run: npm test
         env:
           DISPLAY: ':99.0'
 
