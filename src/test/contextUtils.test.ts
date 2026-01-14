@@ -7,10 +7,12 @@ suite('ContextUtils Test Suite', () => {
   function createMockDocument(
     content: string,
     languageId: string = 'typescript',
+    scheme: string = 'file',
   ): vscode.TextDocument {
     const lines = content.split('\n');
     return {
       languageId,
+      uri: vscode.Uri.from({ scheme, path: '/test/file.ts' }),
       lineCount: lines.length,
       fileName: '/test/file.ts',
       getText: () => content,
@@ -73,5 +75,25 @@ suite('ContextUtils Test Suite', () => {
     const doc = createMockDocument(code);
     const pos = new vscode.Position(0, 10);
     assert.strictEqual(shouldTrigger(doc, pos), true);
+  });
+
+  test('shouldTrigger should return false for SCM input box', () => {
+    const code = 'fix: ';
+    // Test with scheme
+    const docScheme = createMockDocument(code, 'plaintext', 'vscode-scm');
+    const pos = new vscode.Position(0, 5);
+    assert.strictEqual(
+      shouldTrigger(docScheme, pos),
+      false,
+      'Should not trigger for vscode-scm scheme',
+    );
+
+    // Test with language ID
+    const docLang = createMockDocument(code, 'scminput', 'file');
+    assert.strictEqual(
+      shouldTrigger(docLang, pos),
+      false,
+      'Should not trigger for scminput language',
+    );
   });
 });

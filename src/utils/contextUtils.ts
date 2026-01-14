@@ -633,6 +633,14 @@ export function shouldTrigger(
   document: vscode.TextDocument,
   position: vscode.Position,
 ): boolean {
+  // Check for SCM input box
+  if (
+    document.uri.scheme === 'vscode-scm' ||
+    document.languageId === 'scminput'
+  ) {
+    return false;
+  }
+
   const line = document.lineAt(position.line);
   const text = line.text.substring(0, position.character);
 
