@@ -1,3 +1,10 @@
+## [1.1.1] - 2026-01-21
+
+### Docs
+
+- Updated README.md with new features and usage instructions.
+- Rename extension name to "Predicte AI Autocomplete"
+
 # [1.1.0](https://github.com/gasatrya/predicte/compare/v1.0.1...v1.1.0) (2026-01-14)
 
 ### Bug Fixes
