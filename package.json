@@ -1,7 +1,7 @@
 {
   "name": "predicte",
-  "displayName": "Predicte",
-  "description": "Lightweight AI-powered autocomplete using Mistral's Codestral model",
+  "displayName": "Predicte AI Autocomplete",
+  "description": "Free, Lightweight AI-powered autocomplete using Mistral's Codestral model",
   "version": "1.1.0",
   "publisher": "predicte",
   "license": "MIT",
@@ -18,8 +18,9 @@
     "vscode": "^1.108.0"
   },
   "categories": [
+    "AI",
     "Machine Learning",
-    "Other"
+    "Programming Languages"
   ],
   "keywords": [
     "autocomplete",
@@ -28,7 +29,14 @@
     "ai",
     "code completion",
     "lightweight",
-    "fim"
+    "fim",
+    "javascript",
+    "typescript",
+    "typescriptreact",
+    "php",
+    "html",
+    "css",
+    "markdown"
   ],
   "activationEvents": [
     "onStartupFinished",
