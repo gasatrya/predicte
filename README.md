@@ -22,33 +22,33 @@
 
 _This extension is for developers who don't need an AI chat interface but still want the magic of AI autocomplete._
 
-## ✨ Features
+## Features
 
-- **🚀 Blazing Fast**: Streaming responses for instant feedback.
-- **🧠 Context Aware**: Understands your imports, functions, and types for smarter suggestions.
-- **🔋 Efficient**: Intelligent LRU caching and debouncing to save API credits.
-- **🛡️ Secure**: Your API keys are stored safely using VS Code's native SecretStorage.
-- **⚙️ Configurable**: Fine-tune everything from model selection to debounce delay.
+- **Blazing Fast**: Streaming responses for instant feedback.
+- **Context Aware**: Understands your imports, functions, and types for smarter suggestions.
+- **Efficient**: Intelligent LRU caching and debouncing to save API credits.
+- **Secure**: Your API keys are stored safely using VS Code's native SecretStorage.
+- **Configurable**: Fine-tune everything from model selection to debounce delay.
 
-## 📦 Installation
+## Installation
 
 1. Open **Extensions** sidebar (Ctrl+Shift+X).
 2. Search for `Predicte`.
 3. Click **Install**.
 
-## 🚀 Getting Started
+## Getting Started
 
 1.  **Get an API Key**: Sign up at [Mistral AI](https://console.mistral.ai/) and get your API key (Codestral is currently free/beta).
 2.  **Set Key**: Open Command Palette (`Ctrl+Shift+P`) and run **Predicte: Set API Key**.
 3.  **Start Coding**: Open any supported file (JS, TS, Python, Go, etc.) and start typing!
 
-## ⌨️ Shortcuts
+## Shortcuts
 
 | Key   | Action                     |
 | ----- | -------------------------- |
 | `Tab` | Accept **Full** Completion |
 
-## 🛠️ Configuration
+## Configuration
 
 | Setting                      | Default                | Description                           |
 | :--------------------------- | :--------------------- | :------------------------------------ |
@@ -58,10 +58,10 @@ _This extension is for developers who don't need an AI chat interface but still 
 | `predicte.enableStatusBar`   | `true`                 | Show status bar item                  |
 | `predicte.debugMode`         | `false`                | Enable detailed logging               |
 
-## 🤝 Contributing
+## Contributing
 
 We love contributions! Please read our [Contributing Guidelines](CONTRIBUTING.md) to get started.
 
-## 📄 License
+## License
 
 MIT © [Ga Satrya](https://github.com/gasatrya)
