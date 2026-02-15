@@ -25,7 +25,7 @@ export class CompletionStateManager {
   // Current completion state
   private state: CompletionState = {
     completion: null,
-    baseDocumentText: null,
+    baseOffset: null,
     cursorPosition: null,
     completionRange: null,
     timestamp: 0,
@@ -56,7 +56,7 @@ export class CompletionStateManager {
     // Store completion state
     this.state = {
       completion,
-      baseDocumentText: document.getText(),
+      baseOffset: document.offsetAt(position),
       cursorPosition: position,
       completionRange: new vscode.Range(position, position),
       timestamp: Date.now(),
@@ -75,7 +75,7 @@ export class CompletionStateManager {
   clearCompletion(): void {
     this.state = {
       completion: null,
-      baseDocumentText: null,
+      baseOffset: null,
       cursorPosition: null,
       completionRange: null,
       timestamp: 0,
@@ -143,7 +143,7 @@ export class CompletionStateManager {
    * @returns Adjusted completion text, or null if interpolation failed
    */
   interpolateCompletion(document: vscode.TextDocument): string | null {
-    if (!this.hasActiveCompletion() || !this.state.baseDocumentText) {
+    if (!this.hasActiveCompletion() || this.state.baseOffset === null) {
       return null;
     }
 
@@ -172,9 +172,7 @@ export class CompletionStateManager {
 
     // Calculate offset difference between base and current document
     const offsetDiff = this.calculateOffsetDiff(
-      this.state.baseDocumentText,
-      document.getText(),
-      this.state.cursorPosition,
+      document,
       currentCursorPosition,
     );
 
@@ -211,7 +209,7 @@ export class CompletionStateManager {
   ): boolean {
     if (
       !this.state.completion ||
-      !this.state.baseDocumentText ||
+      this.state.baseOffset === null ||
       !this.state.completionRange
     ) {
       return true;
@@ -275,57 +273,31 @@ export class CompletionStateManager {
   }
 
   /**
-   * Calculate offset difference between two document states
+   * Calculate offset difference between base and current document state
    *
-   * Compares the cursor position in the old and new document
+   * Compares the current cursor position with the base offset
    * to determine how many characters were added/removed.
    *
-   * @param oldText The old document text
-   * @param newText The new document text
-   * @param oldCursor The cursor position in old document
-   * @param newCursor The cursor position in new document
+   * @param document The current document
+   * @param currentCursor The current cursor position
    * @returns Offset difference (positive = inserted, negative = deleted, zero = no change)
    */
   private calculateOffsetDiff(
-    oldText: string,
-    newText: string,
-    oldCursor: vscode.Position,
-    newCursor: vscode.Position,
+    document: vscode.TextDocument,
+    currentCursor: vscode.Position,
   ): number {
-    // Find cursor position offsets
-    const oldCursorOffset = this.getOffsetFromPosition(oldText, oldCursor);
-    const newCursorOffset = this.getOffsetFromPosition(newText, newCursor);
+    if (this.state.baseOffset === null) {
+      return 0;
+    }
+
+    // Find current cursor position offset
+    const newCursorOffset = document.offsetAt(currentCursor);
 
     // Calculate difference
     // Positive: user inserted characters before cursor
     // Negative: user deleted characters before cursor
     // Zero: user didn't change position relative to document start
-    return newCursorOffset - oldCursorOffset;
-  }
-
-  /**
-   * Convert position to offset in text
-   *
-   * @param text The document text
-   * @param position The position to convert
-   * @returns The offset (0-based character index)
-   */
-  private getOffsetFromPosition(
-    text: string,
-    position: vscode.Position,
-  ): number {
-    const lines = text.split('\n');
-    let offset = 0;
-
-    // Add lengths of all lines before the target line
-    for (let i = 0; i < position.line && i < lines.length; i++) {
-      offset += lines[i].length + 1; // +1 for newline
-    }
-
-    // Add character offset within the line
-    offset += position.character;
-
-    return offset;
+    return newCursorOffset - this.state.baseOffset;
   }
 
   /**
@@ -345,16 +317,14 @@ export class CompletionStateManager {
     document: vscode.TextDocument,
     cursorPosition: vscode.Position,
   ): string | null {
-    if (!this.state.completion) {
+    if (!this.state.completion || this.state.baseOffset === null) {
       return null;
     }
 
-    // Get text at current cursor position
+    // Get text inserted since completion was generated
     const currentText = document.getText(
       new vscode.Range(
-        cursorPosition.with({
-          character: Math.max(0, cursorPosition.character - offsetDiff),
-        }),
+        document.positionAt(this.state.baseOffset),
         cursorPosition,
       ),
     );

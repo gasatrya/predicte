@@ -12,7 +12,7 @@ import type * as vscode from 'vscode';
  */
 export interface CompletionState {
   completion: string | null;
-  baseDocumentText: string | null;
+  baseOffset: number | null;
   cursorPosition: vscode.Position | null;
   completionRange: vscode.Range | null;
   timestamp: number;
