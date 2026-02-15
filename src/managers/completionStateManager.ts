@@ -300,7 +300,6 @@ export class CompletionStateManager {
     return newCursorOffset - this.state.baseOffset;
   }
 
-
   /**
    * Adjust completion based on offset difference
    *
@@ -324,7 +323,10 @@ export class CompletionStateManager {
 
     // Get text inserted since completion was generated
     const currentText = document.getText(
-      new vscode.Range(document.positionAt(this.state.baseOffset), cursorPosition),
+      new vscode.Range(
+        document.positionAt(this.state.baseOffset),
+        cursorPosition,
+      ),
     );
 
     // Check if current text matches start of completion
